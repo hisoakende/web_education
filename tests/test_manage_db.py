@@ -1,7 +1,10 @@
 import unittest
 
+from psycopg2.sql import SQL, Identifier
+
 from config import *
-from manage_db import *
+from interaction_with_db.manage_db import *
+from other.exceptions import ManyInstanceOfClassError
 
 
 class TestDatabase(unittest.TestCase):
@@ -12,29 +15,35 @@ class TestDatabase(unittest.TestCase):
                          'host': DATABASE_HOST, 'port': DATABASE_PORT}
         cls.conn = psycopg2.connect(**data_for_conn)
         cls.cur = cls.conn.cursor()
-        cls.cur.execute('CREATE TABLE table_for_tests (first_attr int, second_attr varchar)')
-        cls.cur.execute('INSERT INTO table_for_tests (first_attr, second_attr) VALUES (%s, %s)', (1, 'text1'))
+        cls.cur.execute(
+            SQL('CREATE TABLE {} ({} int, {} varchar)').format(Identifier('table_for_tests'), Identifier('first_attr'),
+                                                               Identifier('second_attr')))
+        cls.cur.execute(SQL('INSERT INTO {} ({}, {}) '
+                            'VALUES (%s, %s)').format(Identifier('table_for_tests'),
+                                                      Identifier('first_attr'),
+                                                      Identifier('second_attr')), (1, 'text1'))
         cls.conn.commit()
 
         cls.db = Database(**data_for_conn)
 
-        cls.r_select = Request('SELECT * FROM table_for_tests', (), 'with_output')
-        cls.r_insert = Request('INSERT INTO table_for_tests (first_attr, second_attr) '
-                               'VALUES (%s, %s)', (2, 'text2'), 'without_output')
+        cls.r_select = Request(SQL('SELECT * FROM {}').format(Identifier('table_for_tests')), (), 'with_output')
+        cls.r_insert = Request(SQL('INSERT INTO {} ({}, {}) VALUES (%s, %s)').format(
+            Identifier('table_for_tests'), Identifier('first_attr'),
+            Identifier('second_attr')), (2, 'text2'), 'without_output')
 
     def tearDown(self):
         self.conn.rollback()
 
     @classmethod
     def tearDownClass(cls):
-        cls.cur.execute('DROP TABLE table_for_tests')
+        cls.cur.execute(SQL('DROP TABLE {}').format(Identifier('table_for_tests')))
         cls.conn.commit()
         cls.cur.close()
         cls.conn.close()
 
     def test_for_singleton(self):
-        self.assertEqual(self.db, Database._Database__instance)
-        self.assertRaises(ManyInstanceOfDatabaseError, Database)
+        self.assertEqual(self.db, Database._Singleton__instance)
+        self.assertRaises(ManyInstanceOfClassError, Database)
 
     def test_check_to_requests_exist(self):
         self.assertRaises(DontExistUnexecutedRequests,

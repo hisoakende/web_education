@@ -1,23 +1,16 @@
 import psycopg2
 from psycopg2.extensions import connection, cursor
 
-from data_structures import Request
-from exceptions import ManyInstanceOfDatabaseError, DontExistUnexecutedRequests
+from other.data_structures import Request
+from other.exceptions import DontExistUnexecutedRequests
+from other.utils import Singleton
 
 
-class Database:
+class Database(Singleton):
     """
     Класс, позволяющий работать с базой данных.
     Совершает обработку запросов, выполненяет транзакции
     """
-
-    __instance = None
-
-    def __new__(cls, *args, **kwargs) -> 'Database':
-        if cls.__instance:
-            raise ManyInstanceOfDatabaseError('Может сущестовать только один экземпляр базы данных')
-        cls.__instance = super().__new__(cls)
-        return cls.__instance
 
     def __init__(self, database: str,
                  user: str, password: str,
@@ -38,6 +31,11 @@ class Database:
             host=self.__host,
             port=self.__port
         )
+
+    def add_unexecuted_request(self, request: Request) -> None:
+        if not isinstance(request, Request):
+            raise TypeError('Запрос не является экземпляром класса "Request"')
+        self.__unexecuted_requests.append(request)
 
     def check_to_requests_exist(self) -> None:
         if not self.__unexecuted_requests:
