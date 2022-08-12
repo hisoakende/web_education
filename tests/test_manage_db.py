@@ -1,31 +1,16 @@
 import unittest
 
-from psycopg2.sql import SQL, Identifier
-
-from config import *
 from interaction_with_db.manage_db import *
 from other.exceptions import ManyInstanceOfClassError
+from utils_for_tests import *
 
 
 class TestDatabase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        data_for_conn = {'database': DATABASE_NAME, 'user': DATABASE_USER, 'password': DATABASE_PASSWORD,
-                         'host': DATABASE_HOST, 'port': DATABASE_PORT}
-        cls.conn = psycopg2.connect(**data_for_conn)
-        cls.cur = cls.conn.cursor()
-        cls.cur.execute(
-            SQL('CREATE TABLE {} ({} int, {} varchar)').format(Identifier('table_for_tests'), Identifier('first_attr'),
-                                                               Identifier('second_attr')))
-        cls.cur.execute(SQL('INSERT INTO {} ({}, {}) '
-                            'VALUES (%s, %s)').format(Identifier('table_for_tests'),
-                                                      Identifier('first_attr'),
-                                                      Identifier('second_attr')), (1, 'text1'))
-        cls.conn.commit()
-
+        cls.conn, cls.cur = prepare_db()
         cls.db = Database(**data_for_conn)
-
         cls.r_select = Request(SQL('SELECT * FROM {}').format(Identifier('table_for_tests')), (), 'with_output')
         cls.r_insert = Request(SQL('INSERT INTO {} ({}, {}) VALUES (%s, %s)').format(
             Identifier('table_for_tests'), Identifier('first_attr'),
@@ -36,10 +21,8 @@ class TestDatabase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.cur.execute(SQL('DROP TABLE {}').format(Identifier('table_for_tests')))
-        cls.conn.commit()
-        cls.cur.close()
-        cls.conn.close()
+        clean_db(cls.conn, cls.cur)
+        Database._Singleton__instance = None
 
     def test_for_singleton(self):
         self.assertEqual(self.db, Database._Singleton__instance)

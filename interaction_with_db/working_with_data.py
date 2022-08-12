@@ -5,7 +5,7 @@ from psycopg2.sql import SQL, Identifier
 from interaction_with_db.manage_db import Database
 from other.data_structures import Request
 from other.utils import Singleton
-from work_with_models.models import BaseModel
+from working_with_models.models import BaseModel
 
 
 class RequestFactory:
@@ -54,7 +54,7 @@ class TablesManager(Singleton):
     def __wrapper_process_method(self, method: str) -> Callable:
         def __process_method(**kwargs) -> Union[None, list[tuple]]:
             self.__register_request(method, **kwargs)
-            self._work_table = None
+            self._model = None
             return self.__get_request_result(method)
 
         return __process_method

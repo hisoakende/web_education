@@ -1,27 +1,35 @@
 import unittest
 from typing import Callable
 
-from config import *
 from interaction_with_db.manage_db import Database
 from interaction_with_db.working_with_data import TablesManager, register_tables_manager
 from other.exceptions import DontExistUnexecutedRequests
-from work_with_models.models import SuperUser
+from tests.utils_for_tests import *
+from working_with_models.models import BaseModel
 
 
 class TestTablesManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        data_for_conn = {'database': DATABASE_NAME, 'user': DATABASE_USER, 'password': DATABASE_PASSWORD,
-                         'host': DATABASE_HOST, 'port': DATABASE_PORT}
+        cls.conn, cls.cur = prepare_db()
         cls.db = Database(**data_for_conn)
         cls.tb_manager = TablesManager(cls.db)
-        cls.tb_manager._model = SuperUser('username', 'email', 'password')
         register_tables_manager(cls.tb_manager)
 
     def tearDown(self):
         self.db._Database__unexecuted_requests = []
         self.db._output = None
+
+    def setUp(self):
+        self.tb_manager._model = type('SomeModel', (), {'db_table': 'table_for_tests'})
+
+    @classmethod
+    def tearDownClass(cls):
+        clean_db(cls.conn, cls.cur)
+        Database._Singleton__instance = None
+        TablesManager._Singleton__instance = None
+        BaseModel._manager = None
 
     def test_register_request(self):
         self.tb_manager._TablesManager__register_request('all')
@@ -46,7 +54,7 @@ class TestTablesManager(unittest.TestCase):
         self.assertIsInstance(func, Callable)
 
         func()
-        self.assertIsNone(self.tb_manager._work_table)
+        self.assertIsNone(self.tb_manager._model)
 
     def test_getattr(self):
         self.assertRaises(AttributeError, self.tb_manager.__getattr__, 'some_method')
