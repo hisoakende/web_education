@@ -1,6 +1,6 @@
 import unittest
 
-from working_with_models.validators import BaseValidator, PersonalDataValidator, EmailValidator
+from working_with_models.validators import BaseValidator, PersonalDataValidator, EmailValidator, PasswordValidator
 
 
 class TestBaseValidator(unittest.TestCase):
@@ -12,10 +12,16 @@ class TestBaseValidator(unittest.TestCase):
 
     def test_check_for_characters(self):
         func = self.validator.check_for_characters
-        self.assertRaises(ValueError, func, {'a', 'b', 'c'}, 'ab')
-        self.assertRaises(ValueError, func, {'a', 'c'}, {'a', 'b'})
-        self.assertIsNone(func({'1', '2', '3'}, ['1', '2', '3', '4']))
-        self.assertIsNone(func({'1', '2'}, ('1', '2')))
+        self.assertRaises(ValueError, func, 'abc', 'ab')
+        self.assertRaises(ValueError, func, 'ac', {'a', 'b'})
+        self.assertIsNone(func('123', ['1', '2', '3', '4']))
+        self.assertIsNone(func('12', ('1', '2')))
+
+    def test_check_for_length(self):
+        self.assertRaises(ValueError, self.validator.check_for_length, 'a' * 21, 0, 20)
+        self.assertRaises(ValueError, self.validator.check_for_length, '', 5, 20)
+
+        self.assertIsNone(self.validator.check_for_length('a', 1, 20))
 
     def test_check_for_string(self):
         func = self.validator.check_for_string
@@ -31,15 +37,11 @@ class TestPersonalDataValidator(unittest.TestCase):
         cls.validator = PersonalDataValidator()
         cls.validator.name = 'attr'
 
-    def test_check_for_length(self):
-        self.assertRaises(ValueError, self.validator.check_for_length, 'a' * 20)
-        self.assertIsNone(self.validator.check_for_length('a'))
-
     def test_set(self):
         class_ = type('SomeClass', (), {})
         instance = class_()
         self.validator.__set__(instance, 'ДМИТРИЙ')
-        self.assertEqual('Дмитрий', instance.__dict__['attr'])
+        self.assertEqual('Дмитрий', instance.attr)
 
 
 class TestEmailValidator(unittest.TestCase):
@@ -49,12 +51,30 @@ class TestEmailValidator(unittest.TestCase):
         cls.validator = EmailValidator()
         cls.validator.name = 'attr'
 
-    def test_check_for_special_characters(self):
-        self.assertRaises(ValueError, self.validator.check_for_special_characters, 'some_email')
-        self.assertIsNone(self.validator.check_for_special_characters('some_mail@mail.com'))
+    def test_check_for_at(self):
+        self.assertRaises(ValueError, self.validator.check_for_at, 'some_email')
+        self.assertIsNone(self.validator.check_for_at('some_email@mail.com'))
 
     def test_set(self):
         class_ = type('SomeClass', (), {})
         instance = class_()
         self.validator.__set__(instance, 'some_email@mail.com')
-        self.assertEqual('some_email@mail.com', instance.__dict__['attr'])
+        self.assertEqual('some_email@mail.com', instance.attr)
+
+
+class TestPasswordValidator(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.validator = PasswordValidator()
+        cls.validator.name = 'attr'
+
+    def test_check_for_certain_characters(self):
+        self.assertRaises(ValueError, self.validator.check_for_certain_characters, 'some_password', '0123456789')
+        self.assertIsNone(self.validator.check_for_certain_characters('password1', '0123456789'))
+
+    def test_set(self):
+        class_ = type('SomeClass', (), {})
+        instance = class_()
+        self.validator.__set__(instance, 'PASSword1234!!!!')
+        self.assertEqual('PASSword1234!!!!', instance.attr)

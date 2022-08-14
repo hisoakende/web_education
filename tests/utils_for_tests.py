@@ -14,10 +14,10 @@ def prepare_db() -> tuple[connection, cursor]:
     cur.execute(
         SQL('CREATE TABLE {} ({} int, {} varchar)').format(Identifier('table_for_tests'), Identifier('first_attr'),
                                                            Identifier('second_attr')))
-    cur.execute(SQL('INSERT INTO {} ({}, {}) '
-                    'VALUES (%s, %s)').format(Identifier('table_for_tests'),
-                                              Identifier('first_attr'),
-                                              Identifier('second_attr')), (1, 'text1'))
+    cur.execute(
+        SQL('INSERT INTO {} ({}, {}) VALUES (%s, %s)').format(Identifier('table_for_tests'),
+                                                              Identifier('first_attr'),
+                                                              Identifier('second_attr')), (1, 'text1'))
     conn.commit()
     return conn, cur
 
