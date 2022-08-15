@@ -1,5 +1,7 @@
 from other.exceptions import ManyInstanceOfClassError
 
+alphabet_ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+
 
 class Singleton:
     """Класс, реализующий паттерн singleton. Не дает создавать более одного экземпляра данного класса"""

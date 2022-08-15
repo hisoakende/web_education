@@ -10,14 +10,15 @@ from working_with_models.models import BaseModel
 
 class RequestFactory:
 
-    @classmethod
-    def all(cls, model: BaseModel, **kwargs):
+    @staticmethod
+    def all(model: BaseModel, **kwargs) -> Request:
         sql = SQL('SELECT * FROM {}').format(Identifier(model.db_table))
         return Request(sql, tuple(), 'with_output')
 
 
 def process_output(output):
     """Обработка сырых данных из БД"""
+
     return output
 
 
@@ -36,7 +37,7 @@ class TablesManager(Singleton):
     """
 
     __allowed_methods = ('all',)
-    __methods_without_commit = ('all',)
+    __methods_with_result = ('all',)
 
     def __init__(self, database: Database) -> None:
         self.__db = database
@@ -47,7 +48,7 @@ class TablesManager(Singleton):
         self.__db.add_unexecuted_request(request)
 
     def __get_request_result(self, method: str) -> Union[None, list[tuple]]:
-        if method in self.__methods_without_commit:
+        if method in self.__methods_with_result:
             self.__db.execute_transaction()
             return process_output(self.__db.output)
 

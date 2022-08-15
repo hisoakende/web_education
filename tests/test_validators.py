@@ -1,6 +1,7 @@
 import unittest
 
-from working_with_models.validators import BaseValidator, PersonalDataValidator, EmailValidator, PasswordValidator
+from working_with_models.validators import BaseValidator, PersonalDataValidator, EmailValidator, PasswordValidator, \
+    ClassNumberValidator, ClassLetterValidator
 
 
 class TestBaseValidator(unittest.TestCase):
@@ -18,10 +19,10 @@ class TestBaseValidator(unittest.TestCase):
         self.assertIsNone(func('12', ('1', '2')))
 
     def test_check_for_length(self):
-        self.assertRaises(ValueError, self.validator.check_for_length, 'a' * 21, 0, 20)
-        self.assertRaises(ValueError, self.validator.check_for_length, '', 5, 20)
+        self.assertRaises(ValueError, self.validator.check_for_range, 21, 0, 20)
+        self.assertRaises(ValueError, self.validator.check_for_range, 1, 5, 20)
 
-        self.assertIsNone(self.validator.check_for_length('a', 1, 20))
+        self.assertIsNone(self.validator.check_for_range(1, 1, 20))
 
     def test_check_for_string(self):
         func = self.validator.check_for_string
@@ -32,10 +33,9 @@ class TestBaseValidator(unittest.TestCase):
 
 class TestPersonalDataValidator(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.validator = PersonalDataValidator()
-        cls.validator.name = 'attr'
+    def setUp(self):
+        self.validator = PersonalDataValidator()
+        self.validator.name = 'attr'
 
     def test_set(self):
         class_ = type('SomeClass', (), {})
@@ -78,3 +78,34 @@ class TestPasswordValidator(unittest.TestCase):
         instance = class_()
         self.validator.__set__(instance, 'PASSword1234!!!!')
         self.assertEqual('PASSword1234!!!!', instance.attr)
+
+
+class TestClassNumberValidator(unittest.TestCase):
+
+    def setUp(self):
+        self.validator = ClassNumberValidator()
+        self.validator.name = 'attr'
+
+    def test_set(self):
+        class_ = type('SomeClass', (), {})
+        instance = class_()
+        self.validator.__set__(instance, 4)
+        self.assertEqual(4, instance.attr)
+
+
+class TestClassLetterValidator(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.validator = ClassLetterValidator()
+        cls.validator.name = 'attr'
+
+    def test_check_for_correct_letter(self):
+        self.assertRaises(ValueError, self.validator.check_for_correct_letter, 'abcd')
+        self.assertIsNone(self.validator.check_for_correct_letter('г'))
+
+    def test_set(self):
+        class_ = type('SomeClass', (), {})
+        instance = class_()
+        self.validator.__set__(instance, 'а')
+        self.assertEqual('А', instance.attr)

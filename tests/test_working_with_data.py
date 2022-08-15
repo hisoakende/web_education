@@ -3,6 +3,7 @@ from typing import Callable
 
 from interaction_with_db.manage_db import Database
 from interaction_with_db.working_with_data import TablesManager, register_tables_manager
+from other.data_structures import Request
 from other.exceptions import DontExistUnexecutedRequests
 from tests.utils_for_tests import *
 from working_with_models.models import BaseModel
@@ -39,13 +40,10 @@ class TestTablesManager(unittest.TestCase):
             self.fail()
 
     def test_get_request_result(self):
-        try:
-            self.tb_manager._TablesManager__get_request_result('all')
-        except DontExistUnexecutedRequests:
-            pass
-        except Exception:
-            self.fail()
-
+        self.db.add_unexecuted_request(
+            Request(SQL('SELECT * FROM {}').format(Identifier('table_for_tests')), (), 'with_output'))
+        case1 = self.tb_manager._TablesManager__get_request_result('all')
+        self.assertIsNotNone(case1)
         case2 = self.tb_manager._TablesManager__get_request_result('some_method')
         self.assertIsNone(case2)
 
