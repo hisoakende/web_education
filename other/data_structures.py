@@ -1,9 +1,9 @@
-from typing import NamedTuple, Literal
+from typing import NamedTuple, Literal, Union
 
 from psycopg2.sql import Composed
 
 
 class Request(NamedTuple):
     sql: Composed
-    args: tuple
+    args: Union[tuple, list]
     type: Literal['with_output', 'without_output']

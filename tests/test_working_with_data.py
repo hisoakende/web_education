@@ -4,7 +4,6 @@ from typing import Callable
 from interaction_with_db.manage_db import Database
 from interaction_with_db.working_with_data import TablesManager, register_tables_manager
 from other.data_structures import Request
-from other.exceptions import DontExistUnexecutedRequests
 from tests.utils_for_tests import *
 from working_with_models.models import BaseModel
 
@@ -23,7 +22,7 @@ class TestTablesManager(unittest.TestCase):
         self.db._output = None
 
     def setUp(self):
-        self.tb_manager._model = type('SomeModel', (), {'db_table': 'table_for_tests'})
+        self.tb_manager._model = type('SomeModel', (BaseModel,), {'db_table': 'table_for_tests'})
 
     @classmethod
     def tearDownClass(cls):
@@ -50,7 +49,7 @@ class TestTablesManager(unittest.TestCase):
     def test_process_method(self):
         func = self.tb_manager._TablesManager__wrapper_process_method('all')
         self.assertIsInstance(func, Callable)
-
+        TablesManager._TablesManager__methods_with_result = ()
         func()
         self.assertIsNone(self.tb_manager._model)
 

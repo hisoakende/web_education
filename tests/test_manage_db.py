@@ -1,8 +1,7 @@
 import unittest
 
 from interaction_with_db.manage_db import *
-from other.exceptions import ManyInstanceOfClassError
-from utils_for_tests import *
+from .utils_for_tests import *
 
 
 class TestDatabase(unittest.TestCase):
@@ -23,10 +22,6 @@ class TestDatabase(unittest.TestCase):
     def tearDownClass(cls):
         clean_db(cls.conn, cls.cur)
         Database._Singleton__instance = None
-
-    def test_for_singleton(self):
-        self.assertEqual(self.db, Database._Singleton__instance)
-        self.assertRaises(ManyInstanceOfClassError, Database)
 
     def test_check_to_requests_exist(self):
         self.assertRaises(DontExistUnexecutedRequests,

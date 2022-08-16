@@ -1,5 +1,6 @@
 import datetime
 from abc import ABC, abstractmethod
+from typing import Generator, Any
 
 from other.utils import ClassOrInstanceProperty
 from working_with_models.validators import PasswordValidator, EmailValidator, PersonalDataValidator, \
@@ -14,12 +15,17 @@ class BaseModel(ABC):
     """
 
     _manager = None
+    related_data = ()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.pk = None
 
+    def __iter__(self) -> Generator[tuple[str, Any], None, None]:
+        for key, value in self.__dict__.items():
+            yield key, value
+
     @ClassOrInstanceProperty
-    def manager(self):
+    def manager(self) -> 'TablesManager':
         self._manager._model = self
         return self._manager
 
@@ -50,6 +56,7 @@ class User:
 
 class Student(User, BaseModel):
     db_table = 'students'
+    related_data = ('class_',)
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, class_: 'Class') -> None:
@@ -58,7 +65,10 @@ class Student(User, BaseModel):
 
 
 class Class(BaseModel):
+    """Модель школьного класса"""
+
     db_table = 'classes'
+    related_data = ('classroom_teacher', 'teachers', 'subjects')
     number = ClassNumberValidator()
     letter = ClassLetterValidator()
 
@@ -74,6 +84,7 @@ class Class(BaseModel):
 
 class Teacher(User, BaseModel):
     db_table = 'teachers'
+    related_data = ('subjects', 'classes')
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, about_person: str,
@@ -90,6 +101,7 @@ class Administrator(User, BaseModel):
 
 class Subject(BaseModel):
     db_table = 'subjects'
+    related_data = ('teachers', 'classes')
     name = SubjectNameValidator()
 
     def __init__(self, name: str, teachers: list[Teacher], classes: list[Class]) -> None:
@@ -101,6 +113,7 @@ class Subject(BaseModel):
 
 class Grade(BaseModel):
     db_table = 'grades'
+    related_data = ('student', 'subject', 'teacher')
     value = GradeValueValidator()
 
     def __init__(self, value: int, student: Student,

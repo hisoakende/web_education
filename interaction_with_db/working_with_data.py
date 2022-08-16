@@ -12,8 +12,16 @@ class RequestFactory:
 
     @staticmethod
     def all(model: BaseModel, **kwargs) -> Request:
-        sql = SQL('SELECT * FROM {}').format(Identifier(model.db_table))
-        return Request(sql, tuple(), 'with_output')
+        """Запрос, возвращающий все записи из БД"""
+        return Request(SQL('Заглушка для тестов').format(), tuple(), 'with_output')
+
+    @staticmethod
+    def create(model: BaseModel, **kwargs) -> Request:
+        """
+        Запрос, создающий новую запись в БД
+        Для этого запроса в полях внешних ключей нужно указывать
+        либо pk записи связанной таблицы, либо экземпляр модели, с присутсвующим pk
+        """
 
 
 def process_output(output):
@@ -25,14 +33,15 @@ def process_output(output):
 class TablesManager(Singleton):
     """
     Класс для работы с таблицами базы данных.
-    Получает запросы из класса 'SQLRequestFactory' и передает их в класс 'Database'.
-    Из 'Database' получает данные, передает в обработчик и возвращает их.
+    Получает запросы из класса 'RequestFactory' и передает их в класс 'Database'.
+    Из 'Database' получает данные, передает в обработчик и возвращает обработанные данные.
 
     Для запросов, нуждающихся в коммите, нужно явно вызвать метод 'execute_transaction'
     класса 'Database'
 
     Работа класса: TablesManager.allowed_method(table_name, **kwargs)
-    _model - модель, с которой ведется работа в данных момент. Значение этого атрибута
+
+    _model - модель, с которой ведется работа в данный момент. Значение этого атрибута
     устанавливает сама модель перед вызовом метода этого класса
     """
 
