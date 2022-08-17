@@ -52,11 +52,17 @@ class Database(Singleton):
         self.__unexecuted_requests = []
 
     def __processing_requests(self, conn: connection) -> None:
-        self.check_to_requests_exist()
         with conn.cursor() as cur:
             self.__execute_requests(cur)
 
+    def execute_requests(self) -> None:
+        conn = self.__connect_to_db()
+        self.__processing_requests(conn)
+        conn.commit()
+        conn.close()
+
     def execute_transaction(self) -> None:
+        self.check_to_requests_exist()
         with self.__connect_to_db() as conn:
             self.__processing_requests(conn)
         conn.close()

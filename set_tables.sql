@@ -31,7 +31,7 @@ CREATE TABLE students
 CREATE TABLE subjects
 (
     id   SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE subject_class_teacher
@@ -41,7 +41,7 @@ CREATE TABLE subject_class_teacher
     class_id   INT REFERENCES classes (id)  NOT NULL
 );
 
-CREATE TABLE grade
+CREATE TABLE grades
 (
     id         SERIAL PRIMARY KEY,
     value      INT                          NOT NULL,

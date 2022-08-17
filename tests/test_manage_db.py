@@ -10,12 +10,13 @@ class TestDatabase(unittest.TestCase):
     def setUpClass(cls):
         cls.conn, cls.cur = prepare_db()
         cls.db = Database(**data_for_conn)
-        cls.r_select = Request(SQL('SELECT * FROM {}').format(Identifier('table_for_tests')), (), 'with_output')
+        cls.r_select = Request(SQL('SELECT * FROM {}').format(Identifier('table_for_tests')), [], 'with_output')
         cls.r_insert = Request(SQL('INSERT INTO {} ({}, {}) VALUES (%s, %s)').format(
             Identifier('table_for_tests'), Identifier('first_attr'),
-            Identifier('second_attr')), (2, 'text2'), 'without_output')
+            Identifier('second_attr')), [2, 'text2'], 'without_output')
 
     def tearDown(self):
+        self.db._Database__unexecuted_requests = []
         self.conn.rollback()
 
     @classmethod
@@ -39,3 +40,8 @@ class TestDatabase(unittest.TestCase):
         self.db._Database__unexecuted_requests += [self.r_select for _ in range(3)]
         self.db._Database__execute_requests(self.cur)
         self.assertEqual([], self.db._Database__unexecuted_requests)
+
+    def test_add_unexecuted_request(self):
+        self.assertRaises(TypeError, self.db.add_unexecuted_request, 123)
+        self.db.add_unexecuted_request(Request(SQL('').format(Identifier('')), [], 'with_output'))
+        self.assertTrue(bool(self.db._Database__unexecuted_requests))

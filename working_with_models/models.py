@@ -65,34 +65,35 @@ class Student(User, BaseModel):
 
 
 class Class(BaseModel):
-    """Модель школьного класса"""
+    """
+    Модель школьного класса. Между таблицами 'classes' и 'teachers', 'classes' и 'subjects'
+    связь многие-ко-многим. В коде модели это никак не отражено
+    """
 
     db_table = 'classes'
-    related_data = ('classroom_teacher', 'teachers', 'subjects')
+    related_data = ('classroom_teacher',)
     number = ClassNumberValidator()
     letter = ClassLetterValidator()
 
-    def __init__(self, number: int, letter: str, classroom_teacher: 'Teacher',
-                 teachers: list['Teacher'], subjects: list['Subject']) -> None:
+    def __init__(self, number: int, letter: str, classroom_teacher: 'Teacher') -> None:
         super().__init__()
         self.number = number
         self.letter = letter
         self.classroom_teacher = classroom_teacher
-        self.teachers = teachers
-        self.subjects = subjects
 
 
 class Teacher(User, BaseModel):
+    """
+    Модель школьного учителя. Между таблицами 'teachers' и 'classes', 'teachers' и 'subjects'
+    связь многие-ко-многим. В коде модели это никак не отражено
+    """
+
     db_table = 'teachers'
-    related_data = ('subjects', 'classes')
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
-                 email: str, password: str, about_person: str,
-                 subjects: list['Subject'], classes: list[Class]) -> None:
+                 email: str, password: str, about_person: str) -> None:
         super().__init__(first_name, second_name, patronymic, email, password)
         self.about_person = about_person
-        self.subjects = subjects
-        self.classes = classes
 
 
 class Administrator(User, BaseModel):
@@ -100,15 +101,17 @@ class Administrator(User, BaseModel):
 
 
 class Subject(BaseModel):
+    """
+    Модель школьного предмета. Между таблицами 'subjects' и 'teachers', 'subjects' и 'classes'
+    связь многие-ко-многим. В коде модели это никак не отражено
+    """
+
     db_table = 'subjects'
-    related_data = ('teachers', 'classes')
     name = SubjectNameValidator()
 
-    def __init__(self, name: str, teachers: list[Teacher], classes: list[Class]) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__()
         self.name = name
-        self.teachers = teachers
-        self.classes = classes
 
 
 class Grade(BaseModel):

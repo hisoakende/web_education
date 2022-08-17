@@ -27,3 +27,7 @@ def clean_db(conn, cur) -> None:
     conn.commit()
     cur.close()
     conn.close()
+
+
+def get_some_instance():
+    return type('SomeClass', (), {})()

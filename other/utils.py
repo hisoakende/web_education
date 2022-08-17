@@ -1,6 +1,9 @@
 import datetime
 from typing import Union
 
+from psycopg2.sql import Identifier, Composed, SQL
+
+from other.data_structures import DataForCreateRequest
 from other.exceptions import ManyInstanceOfClassError
 
 alphabet_ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
@@ -39,8 +42,9 @@ def get_pk_related_entry(value: Union['BaseModel', int]) -> int:
     return value.pk
 
 
-def get_args_for_insert(model: 'BaseModel') -> list[int, str]:
-    result = []
+def get_data_for_create_saving_request(model: 'BaseModel') -> DataForCreateRequest:
+    """Возвращает данные для создания SQL запроса"""
+    columns, arguments = [], []
     for attr, value in model:
         if attr == 'pk':
             continue
@@ -48,5 +52,21 @@ def get_args_for_insert(model: 'BaseModel') -> list[int, str]:
             value = get_pk_related_entry(value)
         elif isinstance(value, datetime.date):
             value = process_date_for_request(value)
-        result.append(value)
-    return result
+        arguments.append(value)
+        columns.append(attr)
+    return DataForCreateRequest(columns, arguments)
+
+
+def get_strings_for_sql(count: int) -> list[str]:
+    """Возващает строки видов '{}, {}, {}' и '%s, %s, %s' для создания SQL запроса"""
+    r = [', '.join(s for _ in range(count)) for s in ('{}', '%s')]
+    return r
+
+
+def get_identifiers_for_request(columns: list[str]) -> list[Identifier]:
+    return [Identifier(column) for column in columns]
+
+
+def get_sql_insert_for_request(columns_sql: str, arguments_sql: str,
+                               identifiers: list[Identifier]) -> Composed:
+    return SQL('INSERT INTO {} ' + f'({columns_sql})' + f' VALUES ({arguments_sql})').format(*identifiers)

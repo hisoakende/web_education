@@ -110,8 +110,9 @@ class ClassLetterValidator(BaseValidator):
 class SubjectNameValidator(BaseValidator):
 
     def __set__(self, instance: 'Subject', value: str) -> None:
+        self.check_for_range(len(value), 2, 100)
         self.check_for_characters(value, alphabet_ru)
-        super().__set__(instance, value.upper())
+        super().__set__(instance, value.lower().capitalize())
 
 
 class GradeValueValidator(BaseValidator):
