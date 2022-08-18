@@ -36,9 +36,9 @@ CREATE TABLE subjects
 
 CREATE TABLE subject_class_teacher
 (
-    teacher_id INT REFERENCES teachers (id) NOT NULL,
-    subject_id INT REFERENCES subjects (id) NOT NULL,
-    class_id   INT REFERENCES classes (id)  NOT NULL
+    teacher_id      INT REFERENCES teachers (id) NOT NULL,
+    subject_id      INT REFERENCES subjects (id) NOT NULL,
+    school_class_id INT REFERENCES classes (id)  NOT NULL
 );
 
 CREATE TABLE grades

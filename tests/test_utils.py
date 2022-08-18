@@ -80,3 +80,22 @@ class TestGetIdentifiersForRequest(unittest.TestCase):
         result = get_identifiers_for_request(['first_attr', 'second_attr'])
         expected_result = [Identifier('first_attr'), Identifier('second_attr')]
         self.assertEqual(expected_result, result)
+
+
+class TestGetDataForJoinPartOfSql(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        main_model = type('MainModel', (BaseModel,), {'db_table': 'main_table'})()
+        other_model1_class = type('OtherModel1', (BaseModel,), {'db_table': 'other_table1'})
+        other_model2_class = type('OtherModel2', (BaseModel,), {'db_table': 'other_table2'})
+        main_model.attr1 = other_model1_class()
+        main_model.attr2 = other_model2_class()
+        main_model.related_data = {'attr1': other_model1_class, 'attr2': other_model2_class}
+        expected_result = ('JOIN {} ON {}.{} = {}.id ' * 2, [
+            Identifier('other_table1'), Identifier('main_table'),
+            Identifier('attr1_id'), Identifier('other_table1'),
+            Identifier('other_table2'), Identifier('main_table'),
+            Identifier('attr2_id'), Identifier('other_table2')
+        ])
+        result = get_data_for_join_part_of_sql(main_model)
+        self.assertEqual(expected_result, result)

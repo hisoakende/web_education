@@ -2,7 +2,8 @@ import unittest
 
 from interaction_with_db.manage_db import Database
 from interaction_with_db.working_with_data import TablesManager
-from tests.utils_for_tests import prepare_db, clean_db, data_for_conn
+from tests.utils_for_tests import data_for_conn
+from working_with_models.models import BaseModel
 
 
 class TestTablesManager(unittest.TestCase):
@@ -13,6 +14,7 @@ class TestTablesManager(unittest.TestCase):
         cls.tb_manager = TablesManager(cls.db)
 
     def tearDown(self):
+        self.tb_manager._model = None
         self.tb_manager.arguments_for_request = {}
         self.tb_manager.method = None
         self.db._Database__unexecuted_requests = []
@@ -30,6 +32,7 @@ class TestTablesManager(unittest.TestCase):
         self.assertIsNone(self.tb_manager._TablesManager__check_for_kwargs_dont_exist())
 
     def test_register_request(self):
+        self.tb_manager._model = type('SomeModel', (BaseModel,), {'db_table': 'some_table'})
         self.tb_manager.method = 'all'
         self.tb_manager._TablesManager__register_request()
         self.assertNotEqual([], self.db._Database__unexecuted_requests)

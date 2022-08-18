@@ -1,10 +1,12 @@
 import datetime
 from abc import ABC, abstractmethod
-from typing import Generator, Any
+from typing import Generator, Any, Union
 
 from other.utils import ClassOrInstanceProperty
-from working_with_models.validators import PasswordValidator, EmailValidator, PersonalDataValidator, \
-    ClassNumberValidator, ClassLetterValidator, SubjectNameValidator, GradeValueValidator
+from working_with_models.validators import EmailValidator, PersonalDataValidator, \
+    ClassNumberValidator, ClassLetterValidator, SubjectNameValidator, GradeValueValidator, PasswordValidator
+
+pk_obj = int
 
 
 class BaseModel(ABC):
@@ -54,34 +56,6 @@ class User:
         self.password = password
 
 
-class Student(User, BaseModel):
-    db_table = 'students'
-    related_data = ('class_',)
-
-    def __init__(self, first_name: str, second_name: str, patronymic: str,
-                 email: str, password: str, class_: 'Class') -> None:
-        super().__init__(first_name, second_name, patronymic, email, password)
-        self.class_ = class_
-
-
-class Class(BaseModel):
-    """
-    Модель школьного класса. Между таблицами 'classes' и 'teachers', 'classes' и 'subjects'
-    связь многие-ко-многим. В коде модели это никак не отражено
-    """
-
-    db_table = 'classes'
-    related_data = ('classroom_teacher',)
-    number = ClassNumberValidator()
-    letter = ClassLetterValidator()
-
-    def __init__(self, number: int, letter: str, classroom_teacher: 'Teacher') -> None:
-        super().__init__()
-        self.number = number
-        self.letter = letter
-        self.classroom_teacher = classroom_teacher
-
-
 class Teacher(User, BaseModel):
     """
     Модель школьного учителя. Между таблицами 'teachers' и 'classes', 'teachers' и 'subjects'
@@ -94,6 +68,34 @@ class Teacher(User, BaseModel):
                  email: str, password: str, about_person: str) -> None:
         super().__init__(first_name, second_name, patronymic, email, password)
         self.about_person = about_person
+
+
+class Class(BaseModel):
+    """
+    Модель школьного класса. Между таблицами 'classes' и 'teachers', 'classes' и 'subjects'
+    связь многие-ко-многим. В коде модели это никак не отражено
+    """
+
+    db_table = 'classes'
+    related_data = {'classroom_teacher': Teacher}
+    number = ClassNumberValidator()
+    letter = ClassLetterValidator()
+
+    def __init__(self, number: int, letter: str, classroom_teacher: Union[pk_obj, Teacher]) -> None:
+        super().__init__()
+        self.number = number
+        self.letter = letter
+        self.classroom_teacher = classroom_teacher
+
+
+class Student(User, BaseModel):
+    db_table = 'students'
+    related_data = {'school_class': Class}
+
+    def __init__(self, first_name: str, second_name: str, patronymic: str,
+                 email: str, password: str, school_class: Union[pk_obj, 'Class']) -> None:
+        super().__init__(first_name, second_name, patronymic, email, password)
+        self.school_class = school_class
 
 
 class Administrator(User, BaseModel):
@@ -116,11 +118,11 @@ class Subject(BaseModel):
 
 class Grade(BaseModel):
     db_table = 'grades'
-    related_data = ('student', 'subject', 'teacher')
+    related_data = {'student': Student, 'subject': Subject, 'teacher': Teacher}
     value = GradeValueValidator()
 
-    def __init__(self, value: int, student: Student,
-                 subject: Subject, teacher: Teacher,
+    def __init__(self, value: int, student: Union[pk_obj, Student],
+                 subject: Union[pk_obj, Subject], teacher: Union[pk_obj, Teacher],
                  date: datetime.date = datetime.date.today()) -> None:
         super().__init__()
         self.value = value
