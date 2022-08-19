@@ -17,7 +17,8 @@ class BaseModel(ABC):
     """
 
     _manager = None
-    related_data = ()
+    attributes = ['pk']
+    related_data = {}
 
     def __init__(self) -> None:
         self.pk = None
@@ -39,6 +40,8 @@ class BaseModel(ABC):
 
 class User:
     """Базовое представление пользователя"""
+
+    attributes = ['first_name', 'second_name', 'patronymic', 'email', 'password']
 
     first_name = PersonalDataValidator()
     second_name = PersonalDataValidator()
@@ -63,6 +66,7 @@ class Teacher(User, BaseModel):
     """
 
     db_table = 'teachers'
+    attributes = BaseModel.attributes + User.attributes + ['about_person']
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, about_person: str) -> None:
@@ -77,6 +81,7 @@ class Class(BaseModel):
     """
 
     db_table = 'classes'
+    attributes = BaseModel.attributes + ['number', 'letter', 'classroom_teacher']
     related_data = {'classroom_teacher': Teacher}
     number = ClassNumberValidator()
     letter = ClassLetterValidator()
@@ -90,6 +95,7 @@ class Class(BaseModel):
 
 class Student(User, BaseModel):
     db_table = 'students'
+    attributes = BaseModel.attributes + User.attributes + ['school_class']
     related_data = {'school_class': Class}
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
@@ -100,6 +106,7 @@ class Student(User, BaseModel):
 
 class Administrator(User, BaseModel):
     db_table = 'administrators'
+    attributes = BaseModel.attributes + User.attributes
 
 
 class Subject(BaseModel):
@@ -109,6 +116,7 @@ class Subject(BaseModel):
     """
 
     db_table = 'subjects'
+    attributes = BaseModel.attributes + ['name']
     name = SubjectNameValidator()
 
     def __init__(self, name: str) -> None:
@@ -118,6 +126,7 @@ class Subject(BaseModel):
 
 class Grade(BaseModel):
     db_table = 'grades'
+    attributes = BaseModel.attributes + ['value', 'student', 'subject', 'teacher', 'date']
     related_data = {'student': Student, 'subject': Subject, 'teacher': Teacher}
     value = GradeValueValidator()
 

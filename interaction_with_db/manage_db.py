@@ -1,5 +1,8 @@
+from typing import Callable
+
 import psycopg2
-from psycopg2.extensions import connection, cursor
+import psycopg2.extras
+from psycopg2.extensions import cursor
 
 from other.data_structures import Request
 from other.exceptions import DontExistUnexecutedRequests
@@ -23,14 +26,12 @@ class Database(Singleton):
         self.__unexecuted_requests = []
         self._output = None
 
-    def __connect_to_db(self) -> connection:
-        return psycopg2.connect(
-            database=self.__database,
-            user=self.__user,
-            password=self.__password,
-            host=self.__host,
-            port=self.__port
-        )
+    def __connect_to_db(self) -> None:
+        self.conn = psycopg2.connect(database=self.__database,
+                                     user=self.__user,
+                                     password=self.__password,
+                                     host=self.__host,
+                                     port=self.__port)
 
     def add_unexecuted_request(self, request: Request) -> None:
         if not isinstance(request, Request):
@@ -51,21 +52,29 @@ class Database(Singleton):
             self.__execute_one_request(cur, request)
         self.__unexecuted_requests = []
 
-    def __processing_requests(self, conn: connection) -> None:
-        with conn.cursor() as cur:
+    def __processing_requests(self) -> None:
+        with self.conn.cursor() as cur:
             self.__execute_requests(cur)
 
-    def execute_requests(self) -> None:
-        conn = self.__connect_to_db()
-        self.__processing_requests(conn)
-        conn.commit()
-        conn.close()
+    @staticmethod
+    def __process_connection(func: Callable) -> Callable:
+        def wrapper(self: 'Database') -> None:
+            self.check_to_requests_exist()
+            self.__connect_to_db()
+            func(self)
+            self.conn.close()
 
+        return wrapper
+
+    @__process_connection
+    def execute_requests(self) -> None:
+        self.__processing_requests()
+        self.conn.commit()
+
+    @__process_connection
     def execute_transaction(self) -> None:
-        self.check_to_requests_exist()
-        with self.__connect_to_db() as conn:
-            self.__processing_requests(conn)
-        conn.close()
+        with self.conn:
+            self.__processing_requests()
 
     @property
     def output(self) -> list[tuple]:

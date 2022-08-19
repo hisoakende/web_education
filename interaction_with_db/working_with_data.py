@@ -1,4 +1,5 @@
-from typing import Callable, Union
+from datetime import datetime
+from typing import Callable, Union, Generator
 
 from psycopg2.sql import Identifier
 
@@ -35,16 +36,38 @@ class RequestFactory:
         return Request(sql, arguments, 'without_output')
 
 
-def process_output(output):
+def get_value_from_collection(collection: tuple) \
+        -> Generator[Union[int, str, datetime.date], None, None]:
+    for value in collection:
+        yield value
+
+
+def get_part_of_output_like_dict(value, model):
+    return {attr: next(value) for attr in model.attributes}
+
+
+def get_all_output_like_dict(model, output):
+    result = []
+    for line in output:
+        value = get_value_from_collection(line)
+        data = get_part_of_output_like_dict(value, model)
+        for related_model, related_model_class in model.related_data.items():
+            data[related_model] = get_part_of_output_like_dict(value, related_model_class)
+        result.append(data)
+    return result
+
+
+def process_output(model, output):
     """Обработка сырых данных из БД"""
-    return output
+    data = get_all_output_like_dict(model, output)
+    return data
 
 
 class TablesManager(Singleton):
     """
     Класс для работы с таблицами базы данных.
     Получает запросы из класса 'RequestFactory' и передает их в экземпляр класс 'Database'.
-    Из 'Database' получает данные, передает в обработчик и возвращает обработанные данные.
+    Получает данные из 'Database', передает в обработчик и возвращает обработанные данные.
 
     Запросы, не нуждающиеся в коммите, выполняются автоматически.
     Запрос, нуждающийся в коммите, можно выполнить сразу же, указав 'execution'=True
@@ -101,20 +124,17 @@ class TablesManager(Singleton):
         self.__set_execution_value(kwargs)
         self.arguments_for_request = kwargs
 
-    def __wrapper_process_method(self) -> Callable:
-        def __process_method(**kwargs: Union[int, str]) -> list:
-            self.__process_kwargs(**kwargs)
-            self.__register_request()
-            self.__execute_requests_if_necessary()
-            return process_output(self.__db.output)
-
-        return __process_method
+    def __process_method(self, **kwargs: Union[int, str]) -> list[tuple]:
+        self.__process_kwargs(**kwargs)
+        self.__register_request()
+        self.__execute_requests_if_necessary()
+        return process_output(self._model, self.__db.output)
 
     def __getattr__(self, method: str) -> Callable:
         if method not in self.__allowed_methods:
             raise AttributeError(f'Метод {method} не разрешен')
         self.method = method
-        return self.__wrapper_process_method()
+        return self.__process_method
 
 
 def register_tables_manager(manager: 'TablesManager') -> None:
