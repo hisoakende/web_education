@@ -45,12 +45,12 @@ class EmailValidator(BaseValidator):
         if '@' not in value:
             raise ValueError('Недопустимый email')
 
-    def __set__(self, instance: 'User', value: str) -> None:
-        self.check_for_string(value)
-        self.check_for_at(value)
-        self.check_for_range(len(value), 3, 256)
-        self.check_for_characters(value, self.__allowed_characters)
-        super().__set__(instance, value)
+    def __set__(self, instance: 'User', email: str) -> None:
+        self.check_for_string(email)
+        self.check_for_at(email)
+        self.check_for_range(len(email), 3, 256)
+        self.check_for_characters(email, self.__allowed_characters)
+        super().__set__(instance, email)
 
 
 class PasswordValidator(BaseValidator):
@@ -80,19 +80,29 @@ class PasswordValidator(BaseValidator):
         self.check_for_digit(password)
         self.check_for_special_character(password)
 
-    def __set__(self, instance: 'User', value: str) -> None:
-        self.check_for_string(value)
-        self.check_for_range(len(value), 8, 25)
-        self.check_for_characters(value, self.__allowed_characters)
-        self.check_for_security(value)
-        super().__set__(instance, value)
+    def is_hash(self, password):
+        try:
+            self.check_for_range(len(password), 64, 64)
+        except ValueError:
+            return False
+        return True
+
+    def __set__(self, instance: 'User', password: str) -> None:
+        if self.is_hash(password):
+            pass
+        else:
+            self.check_for_string(password)
+            self.check_for_range(len(password), 8, 25)
+            self.check_for_characters(password, self.__allowed_characters)
+            self.check_for_security(password)
+        super().__set__(instance, password)
 
 
 class ClassNumberValidator(BaseValidator):
 
-    def __set__(self, instance: 'Class', value: int) -> None:
-        self.check_for_range(value, 1, 11)
-        super().__set__(instance, value)
+    def __set__(self, instance: 'Class', number: int) -> None:
+        self.check_for_range(number, 1, 11)
+        super().__set__(instance, number)
 
 
 class ClassLetterValidator(BaseValidator):
@@ -102,17 +112,17 @@ class ClassLetterValidator(BaseValidator):
         if letter.lower() not in list(alphabet_ru):
             raise ValueError('Неккоректная буква класса')
 
-    def __set__(self, instance: 'Class', value: str) -> None:
-        self.check_for_correct_letter(value)
-        super().__set__(instance, value.upper())
+    def __set__(self, instance: 'Class', letter: str) -> None:
+        self.check_for_correct_letter(letter)
+        super().__set__(instance, letter.upper())
 
 
 class SubjectNameValidator(BaseValidator):
 
-    def __set__(self, instance: 'Subject', value: str) -> None:
-        self.check_for_range(len(value), 2, 100)
-        self.check_for_characters(value, alphabet_ru)
-        super().__set__(instance, value.lower().capitalize())
+    def __set__(self, instance: 'Subject', name: str) -> None:
+        self.check_for_range(len(name), 2, 100)
+        self.check_for_characters(name, alphabet_ru)
+        super().__set__(instance, name.lower().capitalize())
 
 
 class GradeValueValidator(BaseValidator):

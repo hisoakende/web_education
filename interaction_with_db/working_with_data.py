@@ -1,12 +1,12 @@
-from datetime import datetime
-from typing import Callable, Union, Generator
+from typing import Callable, Union
 
 from psycopg2.sql import Identifier
 
 from interaction_with_db.manage_db import Database
 from other.data_structures import Request
 from other.utils import Singleton, get_data_for_create_saving_request, get_identifiers_for_request, \
-    get_strings_for_sql, get_sql_for_create_method, get_data_for_join_part_of_sql, get_sql_for_all_method
+    get_strings_for_sql, get_sql_for_creation_method, get_data_for_join_part_of_sql, get_sql_for_all_method, \
+    get_all_output_like_dict, RawOutputData, get_all_output_like_model
 from working_with_models.models import BaseModel
 
 
@@ -32,35 +32,8 @@ class RequestFactory:
         columns, arguments = get_data_for_create_saving_request(model)
         columns_sql, arguments_sql = get_strings_for_sql(len(arguments))
         identifiers = get_identifiers_for_request([model.db_table] + columns)
-        sql = get_sql_for_create_method(columns_sql, arguments_sql, identifiers)
+        sql = get_sql_for_creation_method(columns_sql, arguments_sql, identifiers)
         return Request(sql, arguments, 'without_output')
-
-
-def get_value_from_collection(collection: tuple) \
-        -> Generator[Union[int, str, datetime.date], None, None]:
-    for value in collection:
-        yield value
-
-
-def get_part_of_output_like_dict(value, model):
-    return {attr: next(value) for attr in model.attributes}
-
-
-def get_all_output_like_dict(model, output):
-    result = []
-    for line in output:
-        value = get_value_from_collection(line)
-        data = get_part_of_output_like_dict(value, model)
-        for related_model, related_model_class in model.related_data.items():
-            data[related_model] = get_part_of_output_like_dict(value, related_model_class)
-        result.append(data)
-    return result
-
-
-def process_output(model, output):
-    """Обработка сырых данных из БД"""
-    data = get_all_output_like_dict(model, output)
-    return data
 
 
 class TablesManager(Singleton):
@@ -124,7 +97,7 @@ class TablesManager(Singleton):
         self.__set_execution_value(kwargs)
         self.arguments_for_request = kwargs
 
-    def __process_method(self, **kwargs: Union[int, str]) -> list[tuple]:
+    def __process_method(self, **kwargs: Union[int, str]) -> list[BaseModel]:
         self.__process_kwargs(**kwargs)
         self.__register_request()
         self.__execute_requests_if_necessary()
@@ -139,3 +112,10 @@ class TablesManager(Singleton):
 
 def register_tables_manager(manager: 'TablesManager') -> None:
     BaseModel._manager = manager
+
+
+def process_output(model, raw_output: list[RawOutputData]):
+    """Обработка сырых данных из БД"""
+    output_dict = get_all_output_like_dict(model, raw_output)
+    result = get_all_output_like_model(model, output_dict)
+    return result

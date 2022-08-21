@@ -1,8 +1,7 @@
 import unittest
 
 from interaction_with_db.manage_db import Database
-from interaction_with_db.working_with_data import TablesManager, get_value_from_collection, \
-    get_part_of_output_like_dict, get_all_output_like_dict
+from interaction_with_db.working_with_data import TablesManager
 from tests.utils_for_tests import data_for_conn
 from working_with_models.models import BaseModel
 
@@ -56,29 +55,3 @@ class TestTablesManager(unittest.TestCase):
 
     def test_getattr(self):
         self.assertRaises(AttributeError, self.tb_manager.__getattr__, 'some_method')
-
-
-class TestGetPartOfOutputLikeDict(unittest.TestCase):
-
-    def test_for_correct_result(self):
-        raw_data = (0, 1, 2)
-        generator = get_value_from_collection(raw_data)
-        some_model = type('SomeModel', (BaseModel,),
-                          {'db_table': 'some_table', 'attributes': [f'attr{x}' for x in range(3)]})
-        expected_result = {'attr0': 0, 'attr1': 1, 'attr2': 2}
-        result = get_part_of_output_like_dict(generator, some_model)
-        self.assertEqual(expected_result, result)
-
-
-class TestGetAllOutputLikeDict(unittest.TestCase):
-
-    def test_for_correct_result(self):
-        raw_data = [(0, 1, 1, 2)]  # начиная со второго индекса, значения - атрибуты связанной модели
-        related_model = type('RelatedModel', (BaseModel,),
-                             {'db_table': 'related_table', 'attributes': ['pk', 'some_attr']})
-        main_model = type('MainModel', (BaseModel,),
-                          {'db_table': 'main_table', 'attributes': ['pk', 'related_model'],
-                           'related_data': {'related_model': related_model}})
-        expected_result = [{'pk': 0, 'related_model': {'pk': 1, 'some_attr': 2}}]
-        result = get_all_output_like_dict(main_model, raw_data)
-        self.assertEqual(expected_result, result)

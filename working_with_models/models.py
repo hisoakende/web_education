@@ -9,6 +9,13 @@ from working_with_models.validators import EmailValidator, PersonalDataValidator
 pk_obj = int
 
 
+def get_value_for_repr(value):
+    """Возвращает данные для понятного вывода информации о модели"""
+    if isinstance(value, BaseModel):
+        return value.__str__()
+    return value
+
+
 class BaseModel(ABC):
     """
     Кроме того, как обязать иметь атрибут 'db_table'
@@ -26,6 +33,10 @@ class BaseModel(ABC):
     def __iter__(self) -> Generator[tuple[str, Any], None, None]:
         for key, value in self.__dict__.items():
             yield key, value
+
+    def __repr__(self):
+        s = ', '.join(f'{attr}: {get_value_for_repr(value)}' for attr, value in self)
+        return f'{self.__class__.__name__}({s})'
 
     @ClassOrInstanceProperty
     def manager(self) -> 'TablesManager':

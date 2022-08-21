@@ -1,6 +1,7 @@
 import unittest
 
 from other.utils import *
+from tests.utils_for_tests import get_some_model, init_for_main_model, init_for_related_model
 from working_with_models.models import BaseModel
 
 
@@ -36,6 +37,10 @@ class TestGetPkRelatedEntry(unittest.TestCase):
 
 
 class TestGetDataForCreateSavingRequest(unittest.TestCase):
+    """
+    Тестируются методы 'get_data_for_create_saving_request', 'add_data_to_lists',
+    'process_pair_of_attr_and_value'
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -99,3 +104,86 @@ class TestGetDataForJoinPartOfSql(unittest.TestCase):
         ])
         result = get_data_for_join_part_of_sql(main_model)
         self.assertEqual(expected_result, result)
+
+
+class TestGetRawLineLikeDict(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        raw_data = (0, 1, 2)
+        generator = get_value_from_collection(raw_data)
+        some_model = type('SomeModel', (BaseModel,),
+                          {'db_table': 'some_table', 'attributes': [f'attr{x}' for x in range(3)]})
+        expected_result = {'attr0': 0, 'attr1': 1, 'attr2': 2}
+        result = get_raw_line_like_dict(generator, some_model)
+        self.assertEqual(expected_result, result)
+
+
+class TestGetAllOutputLikeDict(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        raw_data = [(0, 1, 1, 2), (10, 11, 11, 12)]  # начиная со второго индекса, значения - атрибуты связанной модели
+        model = get_some_model()
+        expected_result = [{'pk': 0, 'related_model': {'pk': 1, 'some_attr': 2}},
+                           {'pk': 10, 'related_model': {'pk': 11, 'some_attr': 12}}]
+        result = get_all_output_like_dict(model, raw_data)
+        self.assertEqual(expected_result, result)
+
+
+class TestProcessRawLineOfOutput(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        raw_line = (0, 1, 1, 2)
+        model = get_some_model()
+        expected_result = {'pk': 0, 'related_model': {'pk': 1, 'some_attr': 2}}
+        result = process_raw_line_of_output(raw_line, model)
+        self.assertEqual(expected_result, result)
+
+
+class TestReplacePkWithDict(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        raw_dict_line = {'pk': 1, 'related_model': 2}
+        generator = get_value_from_collection((2, 3))
+        model = get_some_model()
+        expected_result = {'pk': 1, 'related_model': {'pk': 2, 'some_attr': 3}}
+        replace_pk_with_dict(raw_dict_line, generator, model)
+        self.assertEqual(expected_result, raw_dict_line)
+
+
+class TestGetAllOutputLikeModel(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        output = [{'pk': 0, 'related_model': {'pk': 1, 'some_attr': 2}},
+                  {'pk': 10, 'related_model': {'pk': 11, 'some_attr': 12}}]
+        model = get_some_model()
+        model.__init__ = init_for_main_model
+        model.related_data['related_model'].__init__ = init_for_related_model
+        expected_result = '[' \
+                          'MainModel(pk: 0, related_model: RelatedModel(pk: 1, some_attr: 2)), ' \
+                          'MainModel(pk: 10, related_model: RelatedModel(pk: 11, some_attr: 12))' \
+                          ']'
+        result = get_all_output_like_model(model, output)
+        self.assertEqual(expected_result, result.__str__())
+
+
+class TestProcessDictLine(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        output = {'pk': 0, 'related_model': {'pk': 1, 'some_attr': 2}}
+        model = get_some_model()
+        model.__init__ = init_for_main_model
+        model.related_data['related_model'].__init__ = init_for_related_model
+        expected_result = 'MainModel(pk: 0, related_model: RelatedModel(pk: 1, some_attr: 2))'
+        result = process_dict_line(model, output)
+        self.assertEqual(expected_result, result.__str__())
+
+
+class TestGetDictLineLikeModel(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        output = {'pk': 1, 'some_attr': 2}
+        model = get_some_model().related_data['related_model']
+        model.__init__ = init_for_related_model
+        expected_result = 'RelatedModel(pk: 1, some_attr: 2)'
+        result = get_dict_line_like_model(model, output)
+        self.assertEqual(expected_result, result.__str__())
