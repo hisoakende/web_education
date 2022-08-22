@@ -96,11 +96,12 @@ class TestGetDataForJoinPartOfSql(unittest.TestCase):
         main_model.attr1 = other_model1_class()
         main_model.attr2 = other_model2_class()
         main_model.related_data = {'attr1': other_model1_class, 'attr2': other_model2_class}
-        expected_result = ('JOIN {} ON {}.{} = {}.id ' * 2, [
+        s = ' '.join('JOIN {} ON {}.{} = {}.{}' for _ in range(2))
+        expected_result = (s, [
             Identifier('other_table1'), Identifier('main_table'),
-            Identifier('attr1_id'), Identifier('other_table1'),
+            Identifier('attr1_id'), Identifier('other_table1'), Identifier('id'),
             Identifier('other_table2'), Identifier('main_table'),
-            Identifier('attr2_id'), Identifier('other_table2')
+            Identifier('attr2_id'), Identifier('other_table2'), Identifier('id')
         ])
         result = get_data_for_join_part_of_sql(main_model)
         self.assertEqual(expected_result, result)
@@ -187,3 +188,56 @@ class TestGetDictLineLikeModel(unittest.TestCase):
         expected_result = 'RelatedModel(pk: 1, some_attr: 2)'
         result = get_dict_line_like_model(model, output)
         self.assertEqual(expected_result, result.__str__())
+
+
+class TestGetColumnViewForDb(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.model = get_some_model()
+
+    def test_for_attr_is_pk(self):
+        self.assertEqual('id', get_column_view_for_db(self.model, 'pk'))
+
+    def test_for_attr_in_related_data(self):
+        self.assertEqual('related_model_id', get_column_view_for_db(self.model, 'related_model'))
+
+    def test_for_other_attrs(self):
+        self.assertEqual('abcd', get_column_view_for_db(self.model, 'abcd'))
+
+
+class TestGetTableAndColumnForWherePart(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.model = get_some_model()
+
+    def test_for_condition_with_prefix(self):
+        expected_result = ('related_table', 'some_condition')
+        result = get_table_and_column_for_where_part(self.model, 'related_model__some_condition')
+        self.assertEqual(expected_result, result)
+
+    def test_for_condition_without_prefix(self):
+        expected_result = ('main_table', 'some_condition')
+        result = get_table_and_column_for_where_part(self.model, 'some_condition')
+        self.assertEqual(expected_result, result)
+
+
+class ProcessAttrAndValueForWherePart(unittest.TestCase):
+
+    def test_for_pk_is_id(self):
+        result = process_attr_and_value_for_where_part(get_some_model(), 'pk', 123)[0]
+        self.assertEqual('id', result)
+
+
+class TestGetDataForWherePartOfSql(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        s = 'WHERE {}.{} = %s AND {}.{} = %s'
+        identifiers = [Identifier('main_table'), Identifier('id'),
+                       Identifier('related_table'), Identifier('some_attr')]
+        arguments = [1, '2004/8/31']
+        expected_result = (s, identifiers, arguments)
+        model = get_some_model()
+        result = get_data_for_where_part_of_sql(model, pk=1, related_model__some_attr=datetime.date(2004, 8, 31))
+        self.assertEqual(expected_result, result)

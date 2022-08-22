@@ -91,18 +91,18 @@ def get_sql_for_creation_method(columns_sql: str, arguments_sql: str,
 
 
 def get_data_for_join_part_of_sql(model: 'BaseModel') -> tuple[str, list[Identifier]]:
-    s, identifiers = '', []
+    s, identifiers_for_join = [], []
     for attr in model.related_data:
-        s += 'JOIN {} ON {}.{} = {}.id '
+        s.append('JOIN {} ON {}.{} = {}.{}')
         related_table_name = model.related_data[attr].db_table
-        identifiers += [Identifier(related_table_name), Identifier(model.db_table),
-                        Identifier(attr + '_id'), Identifier(related_table_name)]
-    return s, identifiers
+        identifiers_for_join += [Identifier(related_table_name), Identifier(model.db_table),
+                                 Identifier(attr + '_id'), Identifier(related_table_name), Identifier('id')]
+    return ' '.join(s), identifiers_for_join
 
 
-def get_sql_for_all_method(join_part: str, identifiers: list[Identifier]) -> Composed:
-    first_part = 'SELECT * FROM {} '
-    return SQL(first_part + join_part).format(*identifiers)
+def get_sql_for_getter_methods(identifiers: list[Identifier], *args: str, columns='*') -> Composed:
+    s = ['SELECT ' + columns + ' FROM {}'] + list(args)
+    return SQL(' '.join(s)).format(*identifiers)
 
 
 def get_all_output_like_dict(model: 'BaseModel',
@@ -141,8 +141,10 @@ def get_all_output_like_model(model: 'BaseModel', output: list[DictOutputData]):
 
 
 def process_dict_line(model: 'BaseModel', dict_line: DictOutputData) -> 'BaseModel':
-    """Заменяет словари (главный и вложенные) с данными на экземпляры моделей.
-    Возврвщает готовую к использованию модель"""
+    """
+    Заменяет словари (главный и вложенные) с данными на экземпляры моделей.
+    Возвращает готовую к использованию модель
+    """
     for related_model, related_model_class in model.related_data.items():
         dict_line[related_model] = get_dict_line_like_model(related_model_class, dict_line[related_model])
     return get_dict_line_like_model(model, dict_line)
@@ -153,3 +155,43 @@ def get_dict_line_like_model(model: 'BaseModel', dict_line: dict[str, ValuesType
     obj = model(**dict_line)
     obj.pk = pk
     return obj
+
+
+def get_column_view_for_db(model: 'BaseModel', attr: str) -> str:
+    if attr == 'pk':
+        return 'id'
+    elif attr in model.related_data:
+        return f'{attr}_id'
+    return attr
+
+
+def get_table_and_column_for_where_part(model: 'BaseModel', condition: str) -> tuple[str, str]:
+    condition = condition.split('__')
+    if len(condition) == 2 and condition[0] in model.related_data:
+        return model.related_data[condition[0]].db_table, condition[1]
+    return model.db_table, condition[0]
+
+
+def process_attr_and_value_for_where_part(model: 'BaseModel', attr: str,
+                                          value: ModelValuesTypes) -> tuple[str, Union[int, str]]:
+    if attr == 'pk':
+        attr = 'id'
+    return process_pair_of_attr_and_value(attr, value, model)
+
+
+def get_table_attr_value_for_where_part(model: 'BaseModel', condition: str,
+                                        value: ModelValuesTypes) -> tuple[str, str, Union[int, str]]:
+    table, attr = get_table_and_column_for_where_part(model, condition)
+    attr, value = process_attr_and_value_for_where_part(model, attr, value)
+    return table, attr, value
+
+
+def get_data_for_where_part_of_sql(model: 'BaseModel',
+                                   **kwargs: ModelValuesTypes) -> tuple[str, list[Identifier], list[int, str]]:
+    s, identifiers, arguments = [], [], []
+    for condition, condition_value in kwargs.items():
+        s.append('{}.{} = %s')
+        table, attr, condition_value = get_table_attr_value_for_where_part(model, condition, condition_value)
+        identifiers += [Identifier(table), Identifier(attr)]
+        arguments.append(condition_value)
+    return f'WHERE {" AND ".join(s)}', identifiers, arguments

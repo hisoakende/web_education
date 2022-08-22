@@ -1,12 +1,8 @@
-from typing import Callable, Union
-
-from psycopg2.sql import Identifier
+from typing import Callable
 
 from interaction_with_db.manage_db import Database
 from other.data_structures import Request
-from other.utils import Singleton, get_data_for_create_saving_request, get_identifiers_for_request, \
-    get_strings_for_sql, get_sql_for_creation_method, get_data_for_join_part_of_sql, get_sql_for_all_method, \
-    get_all_output_like_dict, RawOutputData, get_all_output_like_model
+from other.utils import *
 from working_with_models.models import BaseModel
 
 
@@ -16,10 +12,36 @@ class RequestFactory:
     def all(model: BaseModel) -> Request:
         """Запрос, возвращающий все записи из БД"""
 
-        join_part, identifiers = get_data_for_join_part_of_sql(model)
-        identifiers.insert(0, Identifier(model.db_table))
-        sql = get_sql_for_all_method(join_part, identifiers)
+        join_part, identifiers_for_join = get_data_for_join_part_of_sql(model)
+        identifiers = [Identifier(model.db_table)] + identifiers_for_join
+        sql = get_sql_for_getter_methods(identifiers, join_part)
         return Request(sql, [], 'with_output')
+
+    @staticmethod
+    def filter(model: BaseModel, **kwargs) -> Request:
+        """
+        Запрос, возвращающий все записи, удовлетворяющие условиям, из БД.
+
+        Все условия выборки из словаря 'kwargs' будут проверяться вместе, с помощью 'AND'.
+        К условиям выборки можно добавить префикс (имя связанной модели),
+        чтобы применить условия к полям связанной модели. Префикс от условия
+        отделяется двумя нижними подчеркиваниями '__'. Например: 'model__name'
+        """
+
+        join_part, identifiers_for_join = get_data_for_join_part_of_sql(model)
+        where_part, identifiers_for_where, arguments = get_data_for_where_part_of_sql(model, **kwargs)
+        identifiers = [Identifier(model.db_table)] + identifiers_for_join + identifiers_for_where
+        sql = get_sql_for_getter_methods(identifiers, join_part, where_part)
+        return Request(sql, arguments, 'with_output')
+
+    @staticmethod
+    def get(model: BaseModel, **kwargs) -> Request:
+        """Запрос, возвращающий только одну запись, удовлетворяющую условию, из БД"""
+        return RequestFactory.filter(model, **kwargs)
+
+    @staticmethod
+    def save():
+        pass
 
     @staticmethod
     def create(model: BaseModel) -> Request:
@@ -54,32 +76,42 @@ class TablesManager(Singleton):
     устанавливает сама модель перед вызовом метода этого класса
     """
 
-    __allowed_methods = ('all', 'create')
-    __methods_with_result = ('all',)
-    __methods_with_kwargs = ()
+    __allowed_methods = ('all', 'filter', 'get', 'create')
+    __methods_with_result = ('all', 'filter', 'get')
+    __methods_with_kwargs = ('filter', 'get')
 
     def __init__(self, database: Database) -> None:
         self.__db = database
         self._model: Union[None, BaseModel] = None
+
+    def __get_request_result_if_necessary(self) -> Union[None, list[BaseModel]]:
+        if self.__is_method_with_result():
+            result = process_output(self._model, self.__db.output)
+            if self.__method == 'get':
+                result = result[0]
+            return result
 
     def __check_for_kwargs_dont_exist(self) -> None:
         if self.arguments_for_request:
             raise TypeError('Аргументы должны отсутсвовать')
 
     def __get_request(self) -> Request:
-        if self.method in self.__methods_with_kwargs:
+        if self.__method in self.__methods_with_kwargs:
             return self.method_to_get_request(self._model, **self.arguments_for_request)
         self.__check_for_kwargs_dont_exist()
         return self.method_to_get_request(self._model)
 
     def __register_request(self) -> None:
-        self.method_to_get_request = getattr(RequestFactory, self.method)
+        self.method_to_get_request = getattr(RequestFactory, self.__method)
         request = self.__get_request()
         self.__db.add_unexecuted_request(request)
 
+    def __is_method_with_result(self) -> bool:
+        return self.__method in self.__methods_with_result
+
     def __execute_requests_if_necessary(self) -> None:
         """Метод выполняет все запросы, находящиеся в экземпляре класса Database"""
-        if self.method in self.__methods_with_result or self.execution:
+        if self.__is_method_with_result() or self.execution:
             self.__db.execute_requests()
 
     def __check_execution_type(self) -> None:
@@ -97,16 +129,16 @@ class TablesManager(Singleton):
         self.__set_execution_value(kwargs)
         self.arguments_for_request = kwargs
 
-    def __process_method(self, **kwargs: Union[int, str]) -> list[BaseModel]:
+    def __process_method(self, **kwargs: Union[int, str]) -> Union[None, list[BaseModel]]:
         self.__process_kwargs(**kwargs)
         self.__register_request()
         self.__execute_requests_if_necessary()
-        return process_output(self._model, self.__db.output)
+        return self.__get_request_result_if_necessary()
 
     def __getattr__(self, method: str) -> Callable:
         if method not in self.__allowed_methods:
             raise AttributeError(f'Метод {method} не разрешен')
-        self.method = method
+        self.__method = method
         return self.__process_method
 
 
