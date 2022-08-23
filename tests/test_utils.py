@@ -52,24 +52,24 @@ class TestGetDataForCreateSavingRequest(unittest.TestCase):
         self.some_model.__class__.related_data = ()
 
     def test_empty_result(self):
-        self.assertEqual(([], []), get_data_for_create_saving_request(self.some_model))
+        self.assertEqual(([], []), get_data_to_write_to_db(self.some_model))
 
     def test_pk_attr(self):
         self.some_model.pk = 1
-        self.assertEqual(([], []), get_data_for_create_saving_request(self.some_model))
+        self.assertEqual(([], []), get_data_to_write_to_db(self.some_model))
 
     def test_attr_in_related_data(self):
         self.some_model.__class__.related_data = ('some_attr',)
         self.some_model.some_attr = self.some_model_class()
         self.some_model.some_attr.pk = 2
         expected_result = [get_pk_related_entry(self.some_model.some_attr)]
-        self.assertEqual(expected_result, get_data_for_create_saving_request(self.some_model)[1])
+        self.assertEqual(expected_result, get_data_to_write_to_db(self.some_model)[1])
 
     def test_value_is_date(self):
         some_attr = datetime.date(year=2004, month=8, day=31)
         self.some_model.some_attr = some_attr
         expected_result = [process_date_for_request(some_attr)]
-        self.assertEqual(expected_result, get_data_for_create_saving_request(self.some_model)[1])
+        self.assertEqual(expected_result, get_data_to_write_to_db(self.some_model)[1])
 
 
 class TestGetStringsForSql(unittest.TestCase):
@@ -82,7 +82,7 @@ class TestGetStringsForSql(unittest.TestCase):
 class TestGetIdentifiersForRequest(unittest.TestCase):
 
     def test_for_correct_result(self):
-        result = get_identifiers_for_request(['first_attr', 'second_attr'])
+        result = get_identifiers('first_attr', 'second_attr')
         expected_result = [Identifier('first_attr'), Identifier('second_attr')]
         self.assertEqual(expected_result, result)
 
@@ -240,4 +240,14 @@ class TestGetDataForWherePartOfSql(unittest.TestCase):
         expected_result = (s, identifiers, arguments)
         model = get_some_model()
         result = get_data_for_where_part_of_sql(model, pk=1, related_model__some_attr=datetime.date(2004, 8, 31))
+        self.assertEqual(expected_result, result)
+
+
+class TestGetDataForSetPartOfSql(unittest.TestCase):
+
+    def test_for_correct_result(self):
+        expected_result = ('SET {} = %s', [Identifier('related_model_id')], [1])
+        model = get_some_model()()
+        model.related_model = 1
+        result = get_data_for_set_part_of_sql(model)
         self.assertEqual(expected_result, result)

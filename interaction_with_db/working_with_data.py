@@ -7,18 +7,22 @@ from working_with_models.models import BaseModel
 
 
 class RequestFactory:
+    __all_columns = 'SELECT * FROM {}'
+    __update_part = 'UPDATE {}'
+    __sort_part = 'ORDER BY {}.{}'
+    __delete_part = 'DELETE FROM {}'
 
-    @staticmethod
-    def all(model: BaseModel) -> Request:
+    @classmethod
+    def all(cls, model: BaseModel) -> Request:
         """Запрос, возвращающий все записи из БД"""
 
         join_part, identifiers_for_join = get_data_for_join_part_of_sql(model)
-        identifiers = [Identifier(model.db_table)] + identifiers_for_join
-        sql = get_sql_for_getter_methods(identifiers, join_part)
+        identifiers = get_identifiers(model.db_table) + identifiers_for_join + get_identifiers(model.db_table, 'id')
+        sql = get_sql(identifiers, cls.__all_columns, join_part, cls.__sort_part)
         return Request(sql, [], 'with_output')
 
-    @staticmethod
-    def filter(model: BaseModel, **kwargs) -> Request:
+    @classmethod
+    def filter(cls, model: BaseModel, **kwargs) -> Request:
         """
         Запрос, возвращающий все записи, удовлетворяющие условиям, из БД.
 
@@ -30,18 +34,25 @@ class RequestFactory:
 
         join_part, identifiers_for_join = get_data_for_join_part_of_sql(model)
         where_part, identifiers_for_where, arguments = get_data_for_where_part_of_sql(model, **kwargs)
-        identifiers = [Identifier(model.db_table)] + identifiers_for_join + identifiers_for_where
-        sql = get_sql_for_getter_methods(identifiers, join_part, where_part)
+        identifiers = get_identifiers(model.db_table) + identifiers_for_join + \
+                      identifiers_for_where + get_identifiers(model.db_table, 'id')
+        sql = get_sql(identifiers, cls.__all_columns, join_part, where_part)
         return Request(sql, arguments, 'with_output')
 
-    @staticmethod
-    def get(model: BaseModel, **kwargs) -> Request:
+    @classmethod
+    def get(cls, model: BaseModel, **kwargs) -> Request:
         """Запрос, возвращающий только одну запись, удовлетворяющую условию, из БД"""
-        return RequestFactory.filter(model, **kwargs)
+        return cls.filter(model, **kwargs)
 
-    @staticmethod
-    def save():
-        pass
+    @classmethod
+    def save(cls, model: BaseModel) -> Request:
+        """Запрос, сохраняющий все изменения модели. Присутствие атрибута 'pk' в модели обязательно"""
+
+        set_part, identifiers_for_set, arguments_set = get_data_for_set_part_of_sql(model)
+        where_part, identifiers_for_where, argument_where = get_data_for_where_part_of_sql(model, pk=model.pk)
+        identifiers = [Identifier(model.db_table)] + identifiers_for_set + identifiers_for_where
+        sql = get_sql(identifiers, cls.__update_part, set_part, where_part)
+        return Request(sql, arguments_set + argument_where, 'without_output')
 
     @staticmethod
     def create(model: BaseModel) -> Request:
@@ -51,11 +62,20 @@ class RequestFactory:
         либо pk записи связанной таблицы, либо экземпляр модели, с присутсвующим pk
         """
 
-        columns, arguments = get_data_for_create_saving_request(model)
+        columns, arguments = get_data_to_write_to_db(model)
         columns_sql, arguments_sql = get_strings_for_sql(len(arguments))
-        identifiers = get_identifiers_for_request([model.db_table] + columns)
+        identifiers = get_identifiers(model.db_table, *columns)
         sql = get_sql_for_creation_method(columns_sql, arguments_sql, identifiers)
         return Request(sql, arguments, 'without_output')
+
+    @classmethod
+    def delete(cls, model: 'BaseModel'):
+        """Запрос, удаляющий запись из БД"""
+
+        where_part, identifiers_for_where, argument = get_data_for_where_part_of_sql(model, pk=model.pk)
+        identifiers = [Identifier(model.db_table)] + identifiers_for_where
+        sql = get_sql(identifiers, cls.__delete_part, where_part)
+        return Request(sql, argument, 'without_output')
 
 
 class TablesManager(Singleton):
@@ -76,7 +96,7 @@ class TablesManager(Singleton):
     устанавливает сама модель перед вызовом метода этого класса
     """
 
-    __allowed_methods = ('all', 'filter', 'get', 'create')
+    __allowed_methods = ('all', 'filter', 'get', 'save', 'create', 'delete')
     __methods_with_result = ('all', 'filter', 'get')
     __methods_with_kwargs = ('filter', 'get')
 

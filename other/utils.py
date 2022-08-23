@@ -3,7 +3,6 @@ from typing import Union, Generator
 
 from psycopg2.sql import Identifier, Composed, SQL
 
-from other.data_structures import DataForCreateRequest
 from other.exceptions import ManyInstanceOfClassError
 
 alphabet_ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
@@ -48,14 +47,14 @@ def get_pk_related_entry(value: Union['BaseModel', int]) -> int:
     return value.pk
 
 
-def get_data_for_create_saving_request(model: 'BaseModel') -> DataForCreateRequest:
-    """Возвращает данные для создания SQL запроса, сохраняющего данные"""
+def get_data_to_write_to_db(model: 'BaseModel') -> tuple[list[str], list[Union[int, str]]]:
+    """Возвращает подготовленные для записи в БД данные"""
     columns, arguments = [], []
     for attr, value in model:
         if attr == 'pk':
             continue
         add_data_to_lists(attr, value, arguments, columns, model)
-    return DataForCreateRequest(columns, arguments)
+    return columns, arguments
 
 
 def add_data_to_lists(attr: str, value: ModelValuesTypes,
@@ -81,13 +80,14 @@ def get_strings_for_sql(count: int) -> list[str]:
     return [', '.join(s for _ in range(count)) for s in ('{}', '%s')]
 
 
-def get_identifiers_for_request(columns: list[str]) -> list[Identifier]:
-    return [Identifier(column) for column in columns]
+def get_identifiers(*args: str) -> list[Identifier]:
+    return [Identifier(column) for column in args]
 
 
 def get_sql_for_creation_method(columns_sql: str, arguments_sql: str,
                                 identifiers: list[Identifier]) -> Composed:
-    return SQL('INSERT INTO {} ' + f'({columns_sql})' + f' VALUES ({arguments_sql})').format(*identifiers)
+    s = 'INSERT INTO {} ' + f'({columns_sql})' + f' VALUES ({arguments_sql})'
+    return get_sql(identifiers, s)
 
 
 def get_data_for_join_part_of_sql(model: 'BaseModel') -> tuple[str, list[Identifier]]:
@@ -95,14 +95,13 @@ def get_data_for_join_part_of_sql(model: 'BaseModel') -> tuple[str, list[Identif
     for attr in model.related_data:
         s.append('JOIN {} ON {}.{} = {}.{}')
         related_table_name = model.related_data[attr].db_table
-        identifiers_for_join += [Identifier(related_table_name), Identifier(model.db_table),
-                                 Identifier(attr + '_id'), Identifier(related_table_name), Identifier('id')]
+        identifiers_for_join += get_identifiers(related_table_name, model.db_table,
+                                                attr + '_id', related_table_name, 'id')
     return ' '.join(s), identifiers_for_join
 
 
-def get_sql_for_getter_methods(identifiers: list[Identifier], *args: str, columns='*') -> Composed:
-    s = ['SELECT ' + columns + ' FROM {}'] + list(args)
-    return SQL(' '.join(s)).format(*identifiers)
+def get_sql(identifiers: list[Identifier], *args: str) -> Composed:
+    return SQL(' '.join(args)).format(*identifiers)
 
 
 def get_all_output_like_dict(model: 'BaseModel',
@@ -192,6 +191,12 @@ def get_data_for_where_part_of_sql(model: 'BaseModel',
     for condition, condition_value in kwargs.items():
         s.append('{}.{} = %s')
         table, attr, condition_value = get_table_attr_value_for_where_part(model, condition, condition_value)
-        identifiers += [Identifier(table), Identifier(attr)]
+        identifiers += get_identifiers(table, attr)
         arguments.append(condition_value)
     return f'WHERE {" AND ".join(s)}', identifiers, arguments
+
+
+def get_data_for_set_part_of_sql(model: 'BaseModel') -> tuple[str, list[Identifier], list[Union[int, str]]]:
+    attrs, arguments = get_data_to_write_to_db(model)
+    s = ', '.join('{} = %s' for _ in range(len(attrs)))
+    return f'SET {s}', get_identifiers(*attrs), arguments
