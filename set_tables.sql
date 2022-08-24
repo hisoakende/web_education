@@ -19,13 +19,13 @@ CREATE TABLE classes
 
 CREATE TABLE students
 (
-    id          SERIAL PRIMARY KEY,
-    first_name  VARCHAR(20)                 NOT NULL,
-    second_name VARCHAR(20)                 NOT NULL,
-    patronymic  VARCHAR(20)                 NOT NULl,
-    email       VARCHAR(256)                NOT NULL,
-    password    CHAR(64)                    NOT NULL,
-    class_id    INT REFERENCES classes (id) NOT NULL
+    id              SERIAL PRIMARY KEY,
+    first_name      VARCHAR(20)                 NOT NULL,
+    second_name     VARCHAR(20)                 NOT NULL,
+    patronymic      VARCHAR(20)                 NOT NULl,
+    email           VARCHAR(256)                NOT NULL,
+    password        CHAR(64)                    NOT NULL,
+    school_class_id INT REFERENCES classes (id) NOT NULL
 );
 
 CREATE TABLE subjects

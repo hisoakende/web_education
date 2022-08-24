@@ -1,6 +1,6 @@
 from typing import Callable
 
-from interaction_with_db.manage_db import Database
+from db_interaction.manage_db import Database
 from other.data_structures import Request
 from other.utils import *
 from working_with_models.models import BaseModel
@@ -101,13 +101,14 @@ class TablesManager(Singleton):
     __methods_with_kwargs = ('filter', 'get')
 
     def __init__(self, database: Database) -> None:
+        BaseModel._manager = self
         self.__db = database
         self._model: Union[None, BaseModel] = None
 
     def __get_request_result_if_necessary(self) -> Union[None, list[BaseModel]]:
         if self.__is_method_with_result():
             result = process_output(self._model, self.__db.output)
-            if self.__method == 'get':
+            if self.__method == 'get' and result:
                 result = result[0]
             return result
 
@@ -160,10 +161,6 @@ class TablesManager(Singleton):
             raise AttributeError(f'Метод {method} не разрешен')
         self.__method = method
         return self.__process_method
-
-
-def register_tables_manager(manager: 'TablesManager') -> None:
-    BaseModel._manager = manager
 
 
 def process_output(model, raw_output: list[RawOutputData]):

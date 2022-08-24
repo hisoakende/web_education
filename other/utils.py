@@ -1,8 +1,10 @@
 import datetime
+from hashlib import sha3_256
 from typing import Union, Generator
 
 from psycopg2.sql import Identifier, Composed, SQL
 
+from config import STATIC_SALT
 from other.exceptions import ManyInstanceOfClassError
 
 alphabet_ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
@@ -200,3 +202,9 @@ def get_data_for_set_part_of_sql(model: 'BaseModel') -> tuple[str, list[Identifi
     attrs, arguments = get_data_to_write_to_db(model)
     s = ', '.join('{} = %s' for _ in range(len(attrs)))
     return f'SET {s}', get_identifiers(*attrs), arguments
+
+
+def get_password_hash(password: str) -> str:
+    hash_func = sha3_256()
+    hash_func.update(str(password + STATIC_SALT).encode())
+    return hash_func.hexdigest()

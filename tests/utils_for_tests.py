@@ -32,7 +32,7 @@ def clean_db(conn: connection, cur: cursor) -> None:
     conn.close()
 
 
-def get_some_instance() -> type:
+def get_some_instance() -> 'SomeClass':
     return type('SomeClass', (), {})()
 
 

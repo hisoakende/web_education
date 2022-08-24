@@ -1,7 +1,7 @@
 from string import ascii_letters, ascii_lowercase, ascii_uppercase, digits, punctuation
 from typing import Iterable, Any
 
-from other.utils import alphabet_ru
+from other.utils import alphabet_ru, get_password_hash
 
 
 class BaseValidator:
@@ -60,7 +60,8 @@ class PasswordValidator(BaseValidator):
     def check_for_certain_characters(password: str, characters: str) -> None:
         password, characters = set(password), set(characters)
         if not password.intersection(characters):
-            raise ValueError(f'В пароле отсутствует хотя бы один символ из следующей коллекции: \n {characters}')
+            raise ValueError(
+                f'В пароле должен присутствовать хотя бы один символ из следующей коллекции: \n {characters}')
 
     def check_for_small_letter(self, password: str) -> None:
         self.check_for_certain_characters(password, ascii_lowercase)
@@ -89,13 +90,14 @@ class PasswordValidator(BaseValidator):
 
     def __set__(self, instance: 'User', password: str) -> None:
         if self.is_hash(password):
-            pass
+            hash_ = password
         else:
             self.check_for_string(password)
             self.check_for_range(len(password), 8, 25)
             self.check_for_characters(password, self.__allowed_characters)
             self.check_for_security(password)
-        super().__set__(instance, password)
+            hash_ = get_password_hash(password)
+        super().__set__(instance, hash_)
 
 
 class ClassNumberValidator(BaseValidator):

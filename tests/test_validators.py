@@ -74,7 +74,8 @@ class TestPasswordValidator(unittest.TestCase):
     def test_set(self):
         instance = get_some_instance()
         self.validator.__set__(instance, 'PASSword1234!!!!')
-        self.assertEqual('PASSword1234!!!!', instance.attr)
+        expected_result = get_password_hash('PASSword1234!!!!')
+        self.assertEqual(expected_result, instance.attr)
 
 
 class TestClassNumberValidator(unittest.TestCase):

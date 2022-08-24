@@ -1,6 +1,6 @@
 import unittest
 
-from interaction_with_db.manage_db import *
+from db_interaction.manage_db import *
 from .utils_for_tests import *
 
 

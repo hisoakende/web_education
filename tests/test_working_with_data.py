@@ -1,7 +1,7 @@
 import unittest
 
-from interaction_with_db.manage_db import Database
-from interaction_with_db.working_with_data import TablesManager
+from db_interaction.manage_db import Database
+from db_interaction.working_with_data import TablesManager
 from tests.utils_for_tests import data_for_conn, get_some_model, init_for_main_model, init_for_related_model
 from working_with_models.models import BaseModel
 
