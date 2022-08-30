@@ -106,11 +106,14 @@ class TablesManager(Singleton):
         self._model: Union[None, BaseModel] = None
 
     def __get_request_result_if_necessary(self) -> Union[None, list[BaseModel]]:
-        if self.__is_method_with_result():
-            result = process_output(self._model, self.__db.output)
-            if self.__method == 'get' and result:
-                result = result[0]
-            return result
+        if not self.__is_method_with_result():
+            return
+        result = process_output(self._model, self.__db.output)
+        if self.__method == 'get' and result:
+            if len(result) > 1:
+                raise ValueError("Метод 'get' вернул несколько записей")
+            result = result[0]
+        return result
 
     def __check_for_kwargs_dont_exist(self) -> None:
         if self.arguments_for_request:

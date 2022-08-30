@@ -35,6 +35,10 @@ class TestTablesManager(unittest.TestCase):
         result1 = self.tb_manager._TablesManager__get_request_result_if_necessary().__str__()
         self.assertEqual(expected_result1, result1)
 
+        self.tb_manager._TablesManager__method = 'get'
+        self.tb_manager._TablesManager__db._output = [(0, 1, 1, 2), (1, 1, 1, 2)]
+        self.assertRaises(ValueError, self.tb_manager._TablesManager__get_request_result_if_necessary)
+
         self.tb_manager._TablesManager__method = 'filter'
         self.tb_manager._TablesManager__db._output = [(0, 1, 1, 2)]
         expected_result2 = '[MainModel(pk: 0, related_model: RelatedModel(pk: 1, some_attr: 2))]'

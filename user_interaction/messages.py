@@ -1,3 +1,6 @@
+from working_with_models.models import BaseModel, Teacher, Student
+
+
 def separate_action() -> None:
     print(f'\33[34m{"-" * 50}\33[0m')
 
@@ -7,7 +10,7 @@ def title(msg: str) -> None:
 
 
 def exit_msg() -> None:
-    print('\n\33[35m[-1] - выйти\33[0m')
+    print('\33[35m[-1] - выйти из программы\33[0m')
 
 
 def welcome_msg() -> None:
@@ -37,3 +40,24 @@ def authenticate_user_msg() -> None:
 def registration_user_msg() -> None:
     separate_action()
     title('Регистрация')
+
+
+def print_error(msg: str) -> None:
+    print(f'\33[31m{msg}\33[0m')
+
+
+def create_user_with_this_data_msg(model_class: BaseModel, first_name: str,
+                                   second_name: str, patronymic: str,
+                                   email: str, additional_field: str) -> None:
+    print(f'Имя: {first_name}')
+    print(f'Фамилия: {second_name}')
+    print(f'Отчество: {patronymic}')
+    print(f'Email: {email}')
+    if model_class is Teacher:
+        print(f'Информация об учителе: {additional_field}\n')
+    elif model_class is Student:
+        print(f'Класс: {additional_field}\n')
+    print(f'Сохранить профиль с такими данными?')
+    print('[1] - сохранить')
+    print('[2] - не сохранять, повторить регистрацию')
+    exit_msg()
