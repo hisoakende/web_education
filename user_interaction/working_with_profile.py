@@ -1,6 +1,8 @@
 from getpass import getpass
 from typing import Union
 
+import psycopg2.errors
+
 from other.utils import get_password_hash
 from user_interaction.enums import ProfileType
 from user_interaction.messages import profile_type_msg, print_error, create_user_with_this_data_msg
@@ -10,7 +12,7 @@ from user_interaction.services import create_dict_with_user_data, try_to_create_
 from working_with_models.models import User
 
 
-@request_data('Неправильный email или пароль')
+@request_data('Неправильный email или пароль\nПовторите процедуру аутентификации еще раз\n')
 def authenticate_user() -> Union[None, User]:
     """Аутентификация пользователя"""
 
@@ -21,6 +23,17 @@ def authenticate_user() -> Union[None, User]:
     user = model_class.manager.get(email=email)
     if user and user.password == get_password_hash(password):
         return user
+
+
+def finish_registration(user: UserTypes) -> Union[None, UserTypes]:
+    try:
+        is_created_user = try_to_insert_user_to_db(user)
+    except psycopg2.errors.UniqueViolation:
+        print_error('Аккаунт такого типа с данным email уже существует')
+        return
+    if is_created_user:
+        return user
+    return register_user()
 
 
 @request_data('Повторите процедуру регистрации еще раз\n')
@@ -39,7 +52,4 @@ def register_user() -> Union[None, UserTypes]:
         return
     data.pop('password')
     create_user_with_this_data_msg(model_class, *data.values())
-    is_created_user = try_to_insert_user_to_db(user)
-    if is_created_user:
-        return user
-    return register_user()
+    return finish_registration(user)

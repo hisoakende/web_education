@@ -4,7 +4,7 @@ CREATE TABLE teachers
     first_name   VARCHAR(20)  NOT NULL,
     second_name  VARCHAR(20)  NOT NULL,
     patronymic   VARCHAR(20)  NOT NULL,
-    email        VARCHAR(256) NOT NULL,
+    email        VARCHAR(256) NOT NULL UNIQUE,
     password     CHAR(64)     NOT NULL,
     about_person VARCHAR      NOT NULL
 );
@@ -23,7 +23,7 @@ CREATE TABLE students
     first_name      VARCHAR(20)                 NOT NULL,
     second_name     VARCHAR(20)                 NOT NULL,
     patronymic      VARCHAR(20)                 NOT NULl,
-    email           VARCHAR(256)                NOT NULL,
+    email           VARCHAR(256)                NOT NULL UNIQUE,
     password        CHAR(64)                    NOT NULL,
     school_class_id INT REFERENCES classes (id) NOT NULL
 );
@@ -57,6 +57,6 @@ CREATE TABLE administrators
     first_name  VARCHAR(20)  NOT NULL,
     second_name VARCHAR(20)  NOT NULL,
     patronymic  VARCHAR(20)  NOT NULL,
-    email       VARCHAR(256) NOT NULL,
+    email       VARCHAR(256) NOT NULL UNIQUE,
     password    CHAR(64)     NOT NULL
 );
