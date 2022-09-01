@@ -2,33 +2,13 @@ import enum
 from functools import wraps
 from typing import Callable, Union, Any, Type
 
+from user_interaction.enums import WhatToDoWithLogin
+
 input_sign = '\33[32m---> \033[0m'
 invalid_input = 'Неккоректный ввод!'
 
 
-class ExtendedEnumMeta(enum.EnumMeta):
-
-    def __contains__(cls, item):
-        return item in sum([[val, val.value, val.name] for val in cls], [])
-
-
-class WhatToDoWithLogin(enum.Enum, metaclass=ExtendedEnumMeta):
-    authentication = '1'
-    registration = '2'
-
-
-class ProfileType(enum.Enum, metaclass=ExtendedEnumMeta):
-    student = '1'
-    teacher = '2'
-    administrator = '3'
-
-
-class CreateUser(enum.Enum, metaclass=ExtendedEnumMeta):
-    yes = '1'
-    no = '2'
-
-
-def request_data(msg: Union[None, str] = invalid_input) -> Callable:
+def request_data(msg: str = invalid_input) -> Callable:
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> WhatToDoWithLogin:
@@ -40,8 +20,7 @@ def request_data(msg: Union[None, str] = invalid_input) -> Callable:
                 data = func(*args, **kwargs)
                 if data is not None:
                     return data
-                if msg is not None:
-                    print(f'\33[31m{msg}\33[0m')
+                print(f'\33[31m{msg}\33[0m')
 
         return wrapper
 
