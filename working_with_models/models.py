@@ -67,6 +67,7 @@ class Teacher(User, BaseModel):
 
     db_table = 'teachers'
     attributes = BaseModel.attributes + User.attributes + ['about_person']
+    name_ru = 'Учитель'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, about_person: str) -> None:
@@ -97,6 +98,7 @@ class Student(User, BaseModel):
     db_table = 'students'
     attributes = BaseModel.attributes + User.attributes + ['school_class']
     related_data = {'school_class': Class}
+    name_ru = 'Ученик'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, school_class: Union[pk_obj, 'Class']) -> None:
@@ -107,6 +109,7 @@ class Student(User, BaseModel):
 class Administrator(User, BaseModel):
     db_table = 'administrators'
     attributes = BaseModel.attributes + User.attributes
+    name_ru = 'Администратор'
 
 
 class Subject(BaseModel):

@@ -14,6 +14,10 @@ profiles = {ProfileType.student: Student,
 UserTypes = Union[Teacher, Student, Administrator]
 
 
+class State:
+    user = None
+
+
 def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_name: str,
                        patronymic: str, email: str, password: str, *additional_field: str) -> UserTypes:
     try:

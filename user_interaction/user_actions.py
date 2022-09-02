@@ -7,8 +7,9 @@ from other.utils import get_password_hash
 from user_interaction.enums import ProfileType
 from user_interaction.messages import profile_type_msg, print_error, create_user_with_this_data_msg
 from user_interaction.requesting_data_from_user import request_data, get_choice, get_answer
-from user_interaction.services import create_dict_with_user_data, try_to_create_user, try_to_insert_user_to_db, \
-    profiles, UserTypes
+from user_interaction.services import State
+from user_interaction.services import create_dict_with_user_data, try_to_create_user, profiles, UserTypes, \
+    try_to_insert_user_to_db
 from working_with_models.models import User
 
 
@@ -53,3 +54,8 @@ def register_user() -> Union[None, UserTypes]:
     data.pop('password')
     create_user_with_this_data_msg(model_class, *data.values())
     return finish_registration(user)
+
+
+def logout():
+    """Выход из аккаунта"""
+    State.user = None

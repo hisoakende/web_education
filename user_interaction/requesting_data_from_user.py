@@ -2,7 +2,7 @@ import enum
 from functools import wraps
 from typing import Callable, Union, Any, Type
 
-from user_interaction.enums import WhatToDoWithLogin
+from user_interaction.messages import goodbye_msg
 
 input_sign = '\33[32m---> \033[0m'
 invalid_input = 'Неккоректный ввод!'
@@ -11,10 +11,10 @@ invalid_input = 'Неккоректный ввод!'
 def request_data(msg: str = invalid_input) -> Callable:
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> WhatToDoWithLogin:
+        def wrapper(*args: Any, **kwargs: Any) -> 'WhatToDoWithLogin':
             """
-            Если декорируемая функция возвращает 'None',
-            то будет напечатана ошибка и еще раз вызвана эта функция
+            Декоратор позволяет вызывать функцию до того момента,
+            как она вернет значение, неравное 'None'
             """
             while True:
                 data = func(*args, **kwargs)
@@ -30,7 +30,10 @@ def request_data(msg: str = invalid_input) -> Callable:
 @request_data()
 def _get_choice(choices: Type[enum.Enum]) -> Union[None, enum.Enum]:
     choice = input(input_sign)
-    if choice in choices:
+    if choice == '-1':
+        goodbye_msg()
+        quit()
+    elif choice in choices:
         return choices(choice)
 
 

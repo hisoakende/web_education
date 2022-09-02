@@ -7,23 +7,28 @@ def separate_action() -> None:
     print(f'\33[34m{"-" * 50}\33[0m')
 
 
-def title(msg: str) -> None:
+def strong_font(msg: str) -> None:
     print(f'\33[1m{msg}\33[0m')
 
 
-def exit_msg() -> None:
+def goodbye_msg() -> None:
+    separate_action()
+    strong_font('Спасибо за работу в нашем приложении. Всего хорошего!')
+
+
+def choose_exit_msg() -> None:
     print('\33[35m[-1] - выйти из программы\33[0m')
 
 
 def welcome_msg() -> None:
     separate_action()
-    title('Добро пожаловать в систему web-образования!')
+    strong_font('Добро пожаловать в систему web-образования!')
 
 
 def choice_about_login_msg() -> None:
     print('[1] - войти в аккаунт')
     print('[2] - зарегистироваться')
-    exit_msg()
+    choose_exit_msg()
 
 
 def profile_type_msg() -> None:
@@ -31,17 +36,17 @@ def profile_type_msg() -> None:
     print('[1] - ученик')
     print('[2] - учитель')
     print('[3] - администратор')
-    exit_msg()
+    choose_exit_msg()
 
 
 def authenticate_user_msg() -> None:
     separate_action()
-    title('Аутентификация')
+    strong_font('Аутентификация')
 
 
 def registration_user_msg() -> None:
     separate_action()
-    title('Регистрация')
+    strong_font('Регистрация')
 
 
 def print_error(msg: str) -> None:
@@ -54,7 +59,7 @@ def print_full_name(first_name: str, second_name: str, patronymic: str) -> None:
     print(f'Отчество: {patronymic}')
 
 
-def whether_to_save_account() -> None:
+def whether_to_save_account_msg() -> None:
     print('\nСохранить профиль с такими данными?')
     print('[1] - сохранить')
     print('[2] - не сохранять, повторить регистрацию')
@@ -69,5 +74,32 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
         print(f'Информация об учителе: {additional_field}')
     elif model_class is Student:
         print(f'Класс: {str(additional_field.number) + additional_field.letter}')
-    whether_to_save_account()
-    exit_msg()
+    whether_to_save_account_msg()
+    choose_exit_msg()
+
+
+def teacher_main_menu_choices_msg() -> None:
+    base_main_menu_choices_msg()
+
+
+def student_main_menu_choices_msg() -> None:
+    print('[1] - просмотреть оценки')
+    base_main_menu_choices_msg()
+
+
+def administrator_main_menu_choices_msg() -> None:
+    base_main_menu_choices_msg()
+
+
+def base_main_menu_choices_msg() -> None:
+    print('[0] - выйти из аккаунта')
+    choose_exit_msg()
+
+
+def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:
+    separate_action()
+    strong_font(f'Вы вошли как {name} {patronymic} ({user_type})\n')
+
+
+def main_menu_msg() -> None:
+    strong_font('Возможные действия:')
