@@ -1,6 +1,6 @@
 import datetime
 from hashlib import sha3_256
-from typing import Union, Generator
+from typing import Union, Generator, Iterable
 
 from psycopg2.sql import Identifier, Composed, SQL
 
@@ -9,11 +9,11 @@ from other.exceptions import ManyInstanceOfClassError
 
 alphabet_ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
 
-ModelValuesTypes = Union[int, str, datetime.date, 'BaseModel']
-ValuesTypesFromDB = Union[int, str, datetime.date]
-RawOutputData = tuple[Union[int, str, datetime.date], ...]
-RawDictOutputData = dict[str, Union[int, str, datetime.date]]
-DictOutputData = dict[str, Union[int, str, datetime.date, 'DictOutputData']]
+ModelValuesTypes = Union[int, str, datetime.date, 'BaseModel', bool]
+ValuesTypesFromDB = Union[int, str, datetime.date, bool]
+RawOutputData = tuple[ValuesTypesFromDB, ...]
+RawDictOutputData = dict[str, ValuesTypesFromDB]
+DictOutputData = dict[str, Union[ValuesTypesFromDB, 'DictOutputData']]
 
 
 class Singleton:
@@ -118,19 +118,19 @@ def process_raw_line_of_output(line: tuple[ValuesTypesFromDB, ...], model: 'Base
     return dict_line
 
 
-def get_raw_line_like_dict(value: Generator[Union[int, str, datetime.date], None, None],
+def get_raw_line_like_dict(value: Generator[ValuesTypesFromDB, None, None],
                            model: 'BaseModel') -> RawDictOutputData:
     return {attr: next(value) for attr in model.attributes}
 
 
-def get_value_from_collection(collection: tuple) \
+def get_value_from_collection(collection: Iterable) \
         -> Generator[Union[int, str, datetime.date], None, None]:
     for value in collection:
         yield value
 
 
 def replace_pk_with_dict(dict_line: RawDictOutputData,
-                         get_value: Generator[Union[int, str, datetime.date], None, None],
+                         get_value: Generator[ValuesTypesFromDB, None, None],
                          model: 'BaseModel') -> None:
     """Заменяет первичные ключи связанных моделей в словаре dict_line, на словари с данными"""
     for related_model, related_model_class in model.related_data.items():

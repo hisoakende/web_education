@@ -9,7 +9,6 @@ from working_with_models.models import BaseModel
 class RequestFactory:
     __all_columns = 'SELECT * FROM {}'
     __update_part = 'UPDATE {}'
-    __sort_part = 'ORDER BY {}.{}'
     __delete_part = 'DELETE FROM {}'
 
     @classmethod
@@ -17,8 +16,8 @@ class RequestFactory:
         """Запрос, возвращающий все записи из БД"""
 
         join_part, identifiers_for_join = get_data_for_join_part_of_sql(model)
-        identifiers = get_identifiers(model.db_table) + identifiers_for_join + get_identifiers(model.db_table, 'id')
-        sql = get_sql(identifiers, cls.__all_columns, join_part, cls.__sort_part)
+        identifiers = get_identifiers(model.db_table) + identifiers_for_join
+        sql = get_sql(identifiers, cls.__all_columns, join_part)
         return Request(sql, [], 'with_output')
 
     @classmethod

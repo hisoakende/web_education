@@ -13,7 +13,7 @@ class BaseModel(ABC):
     """Базовый класс модели"""
 
     _manager = None
-    attributes = ['pk']
+    attributes = ('pk',)
     related_data = {}
 
     def __init__(self) -> None:
@@ -41,7 +41,7 @@ class BaseModel(ABC):
 class User:
     """Базовое представление пользователя"""
 
-    attributes = ['first_name', 'second_name', 'patronymic', 'email', 'password']
+    attributes = ('first_name', 'second_name', 'patronymic', 'email', 'password')
 
     first_name = PersonalDataValidator()
     second_name = PersonalDataValidator()
@@ -66,7 +66,7 @@ class Teacher(User, BaseModel):
     """
 
     db_table = 'teachers'
-    attributes = BaseModel.attributes + User.attributes + ['about_person']
+    attributes = BaseModel.attributes + User.attributes + ('about_person',)
     name_ru = 'Учитель'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
@@ -82,7 +82,7 @@ class Class(BaseModel):
     """
 
     db_table = 'classes'
-    attributes = BaseModel.attributes + ['number', 'letter', 'classroom_teacher']
+    attributes = BaseModel.attributes + ('number', 'letter', 'classroom_teacher')
     related_data = {'classroom_teacher': Teacher}
     number = ClassNumberValidator()
     letter = ClassLetterValidator()
@@ -96,7 +96,7 @@ class Class(BaseModel):
 
 class Student(User, BaseModel):
     db_table = 'students'
-    attributes = BaseModel.attributes + User.attributes + ['school_class']
+    attributes = BaseModel.attributes + User.attributes + ('school_class',)
     related_data = {'school_class': Class}
     name_ru = 'Ученик'
 
@@ -119,17 +119,23 @@ class Subject(BaseModel):
     """
 
     db_table = 'subjects'
-    attributes = BaseModel.attributes + ['name']
+    attributes = BaseModel.attributes + ('name',)
     name = SubjectNameValidator()
 
     def __init__(self, name: str) -> None:
         super().__init__()
         self.name = name
 
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
 
 class Grade(BaseModel):
     db_table = 'grades'
-    attributes = BaseModel.attributes + ['value', 'student', 'subject', 'teacher', 'date']
+    attributes = BaseModel.attributes + ('value', 'student', 'subject', 'teacher', 'date')
     related_data = {'student': Student, 'subject': Subject, 'teacher': Teacher}
     value = GradeValueValidator()
 
@@ -142,3 +148,27 @@ class Grade(BaseModel):
         self.subject = subject
         self.teacher = teacher
         self.date = date
+
+
+class Period(BaseModel):
+    db_table = 'periods'
+    attributes = BaseModel.attributes + ('start', 'finish', 'is_current')
+
+    def __init__(self, start: datetime.date, finish: datetime.date, is_current: bool) -> None:
+        super().__init__()
+        self.start = start
+        self.finish = finish
+        self.is_current = is_current
+
+
+class SubjectClassTeacher(BaseModel):
+    db_table = 'subject_class_teacher'
+    attributes = BaseModel.attributes + ('subject', 'school_class', 'teacher')
+    related_data = {'subject': Subject, 'school_class': Class, 'teacher': Teacher}
+
+    def __init__(self, subject: Union[pk_obj, Subject],
+                 school_class: Union[pk_obj, Class], teacher: Union[pk_obj, Teacher]) -> None:
+        super().__init__()
+        self.subject = subject
+        self.school_class = school_class
+        self.teacher = teacher

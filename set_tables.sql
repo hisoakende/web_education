@@ -36,6 +36,7 @@ CREATE TABLE subjects
 
 CREATE TABLE subject_class_teacher
 (
+    id              SERIAL PRIMARY KEY,
     teacher_id      INT REFERENCES teachers (id) NOT NULL,
     subject_id      INT REFERENCES subjects (id) NOT NULL,
     school_class_id INT REFERENCES classes (id)  NOT NULL
@@ -59,4 +60,12 @@ CREATE TABLE administrators
     patronymic  VARCHAR(20)  NOT NULL,
     email       VARCHAR(256) NOT NULL UNIQUE,
     password    CHAR(64)     NOT NULL
+);
+
+CREATE TABLE periods
+(
+    id         SERIAL PRIMARY KEY,
+    start      DATE NOT NULL,
+    finish     DATE NOT NULL,
+    is_current BOOLEAN
 );

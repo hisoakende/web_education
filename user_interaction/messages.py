@@ -98,8 +98,8 @@ def base_main_menu_choices_msg() -> None:
 
 def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:
     separate_action()
-    strong_font(f'Вы вошли как {name} {patronymic} ({user_type})\n')
+    strong_font(f'Вы вошли как {name} {patronymic} ({user_type})')
 
 
 def main_menu_msg() -> None:
-    strong_font('Возможные действия:')
+    strong_font('\nВозможные действия:')

@@ -123,7 +123,7 @@ class SubjectNameValidator(BaseValidator):
 
     def __set__(self, instance: 'Subject', name: str) -> None:
         self.check_for_range(len(name), 2, 100)
-        self.check_for_characters(name, alphabet_ru)
+        self.check_for_characters(name, alphabet_ru + ' ')
         super().__set__(instance, name.lower().capitalize())
 
 
