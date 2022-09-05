@@ -5,7 +5,8 @@ from user_interaction.messages import welcome_msg, authenticate_user_msg, \
     teacher_main_menu_choices_msg, student_main_menu_choices_msg, administrator_main_menu_choices_msg, main_menu_msg
 from user_interaction.requesting_data_from_user import get_choice
 from user_interaction.services import State
-from user_interaction.user_actions import authenticate_user, register_user, logout, show_grades, get_my_teachers
+from user_interaction.user_actions import authenticate_user, register_user, logout, show_grades, get_my_teachers, \
+    show_my_students
 
 
 def welcome() -> None:
@@ -25,9 +26,10 @@ def welcome() -> None:
 
 base_actions = {'exit': logout}
 student_actions = {'show_grades': show_grades, 'get_my_teachers': get_my_teachers}
+teacher_action = {'show_my_students': show_my_students}
 
 user_actions_and_choices = {
-    'Teacher': (base_actions | {}, teacher_main_menu_choice, teacher_main_menu_choices_msg),
+    'Teacher': (base_actions | teacher_action, teacher_main_menu_choice, teacher_main_menu_choices_msg),
     'Student': (base_actions | student_actions, student_main_menu_choice, student_main_menu_choices_msg),
     'Administrator': (base_actions | {}, administrator_main_menu_choice, administrator_main_menu_choices_msg)
 }

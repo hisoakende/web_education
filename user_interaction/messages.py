@@ -80,6 +80,7 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
+    print('[2] - показать моих учеников')
     choose_exit_msg()
 
 

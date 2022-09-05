@@ -9,10 +9,11 @@ from user_interaction.messages import profile_type_msg, print_error, create_user
 from user_interaction.requesting_data_from_user import request_data, get_choice, get_answer
 from user_interaction.services import State, get_empty_table_dict, fill_raw_table_with_grades, \
     prepare_pretty_table_for_grades, \
-    fill_pretty_table_with_grades, get_pretty_table, prepare_pretty_table_for_tchs_list, fill_pretty_table_with_tchs
+    fill_pretty_table_with_grades, get_pretty_table, prepare_pretty_table_for_tchs_list, fill_pretty_table_with_tchs, \
+    print_class_students, get_school_class_from_user
 from user_interaction.services import create_dict_with_user_data, try_to_create_user, profiles, UserTypes, \
     try_to_insert_user_to_db
-from working_with_models.models import User, SubjectClassTeacher, Grade
+from working_with_models.models import User, SubjectClassTeacher, Grade, Student
 
 
 @request_data('Неправильный email или пароль\nПовторите процедуру аутентификации еще раз\n')
@@ -86,3 +87,11 @@ def get_my_teachers() -> None:
     teachers_subjects = SubjectClassTeacher.manager.filter(school_class=user_class)
     fill_pretty_table_with_tchs(pretty_table, teachers_subjects)
     print(pretty_table)
+
+
+def show_my_students() -> None:
+    """Показывает всех учеников, которые учатся у конкретного учителя"""
+
+    school_class = get_school_class_from_user()
+    students = Student.manager.filter(school_class=school_class)
+    print_class_students(students)

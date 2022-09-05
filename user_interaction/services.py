@@ -43,11 +43,11 @@ def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_nam
 
 
 def get_school_class_from_user() -> Class:
-    classes = get_classes_for_registration()
+    classes = get_classes_to_select()
     classes_enum = create_enum_of_classes(classes)
     classes_msg = get_str_of_classes_for_msg(classes)
     class_pk = get_choice(classes_enum, f'Введите класс:\n{classes_msg}').value
-    return Class.manager.get(pk=class_pk, execution=True)
+    return Class.manager.get(pk=class_pk)
 
 
 def get_additional_field(model_class: Type[UserTypes]) -> Union[None, str, Class]:
@@ -77,7 +77,7 @@ def create_dict_with_user_data(model_class: Type[UserTypes]) -> dict[str, str]:
     return result
 
 
-def get_classes_for_registration() -> list[tuple[str, str]]:
+def get_classes_to_select() -> list[tuple[str, str]]:
     classes = Class.manager.all(execution=True)
     return [(str(cls.number) + cls.letter, str(cls.pk)) for cls in classes]
 
@@ -125,11 +125,14 @@ def prepare_pretty_table_for_tchs_list(table: PrettyTable) -> None:
     table.field_names = ('Предмет', 'Учитель')
 
 
+def get_fio(user: UserTypes) -> str:
+    return f'{user.first_name} {user.second_name} {user.patronymic}'
+
+
 def fill_pretty_table_with_tchs(table: PrettyTable, teachers_subjects: list[SubjectClassTeacher]) -> None:
     """Заполняет пустую таблицу учителями и предметами"""
     for t_s in teachers_subjects:
-        fio = f'{t_s.teacher.first_name} {t_s.teacher.second_name} {t_s.teacher.patronymic}'
-        table.add_row([t_s.subject.name, fio])
+        table.add_row([t_s.subject.name, get_fio(t_s.teacher)])
 
 
 def get_str_grades_for_table(grades: dict[Subject, list]) -> list[str]:
@@ -145,3 +148,8 @@ def fill_pretty_table_with_grades(raw_table: dict[datetime.date, dict[Subject, l
     """Заполняет пустую таблицу оценками"""
     for grade_date, sbj_grades in raw_table.items():
         pretty_table.add_row([get_str_date_for_table(grade_date)] + get_str_grades_for_table(sbj_grades))
+
+
+def print_class_students(students: list[Student]) -> None:
+    for index, student in enumerate(students, 1):
+        print(f'{index}. {get_fio(student)}')

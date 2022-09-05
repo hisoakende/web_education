@@ -42,7 +42,7 @@ def get_base_main_menu_choices() -> list[tuple[str, str]]:
 
 teacher_main_menu_choice = BaseMainMenuChoiceConstructor(
     'TeacherMainMenuChoice',
-    get_base_main_menu_choices() + []
+    get_base_main_menu_choices() + [('show_my_students', '2')]
 )
 
 student_main_menu_choice = BaseMainMenuChoiceConstructor(
