@@ -1,7 +1,7 @@
 import enum
 from typing import Any
 
-base_main_menu_choice = {'exit': '0'}
+base_main_menu_choice = {'exit': '1'}
 
 
 class ExtendedEnumMeta(enum.EnumMeta):
@@ -47,7 +47,7 @@ teacher_main_menu_choice = BaseMainMenuChoiceConstructor(
 
 student_main_menu_choice = BaseMainMenuChoiceConstructor(
     'StudentMainMenuChoice',
-    get_base_main_menu_choices() + [('show_grades', '1')]
+    get_base_main_menu_choices() + [('show_grades', '2'), ('get_my_teachers', '3')]
 )
 
 administrator_main_menu_choice = BaseMainMenuChoiceConstructor(

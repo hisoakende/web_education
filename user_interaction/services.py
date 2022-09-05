@@ -5,6 +5,7 @@ from typing import Type, Union
 
 from prettytable import PrettyTable
 
+from other.exceptions import InstanceCantExist
 from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType
 from user_interaction.messages import print_error
 from user_interaction.requesting_data_from_user import get_answer, get_choice
@@ -26,6 +27,9 @@ class State:
     (ставить и просматривать оценки). Например, четверть или полугодие"""
     user = None
     current_dates = None
+
+    def __new__(cls, *args, **kwargs):
+        raise InstanceCantExist
 
 
 def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_name: str,
@@ -100,18 +104,32 @@ def get_empty_table_dict(subjects: list[Subject]) -> dict[datetime.date, dict[Su
     return {dt: get_subjects_for_table(subjects) for dt in State.current_dates}
 
 
-def fill_raw_table(table: dict[datetime.date, dict[Subject, list]], grades: list[Grade]) -> None:
+def fill_raw_table_with_grades(table: dict[datetime.date, dict[Subject, list]], grades: list[Grade]) -> None:
     for grade in grades:
         if grade.date not in State.current_dates:
             continue
         table[grade.date][grade.subject].append(str(grade.value))
 
 
-def prepare_pretty_table(subjects: list[Subject]) -> PrettyTable:
+def get_pretty_table() -> PrettyTable:
     table = PrettyTable()
     table.hrules = 1
-    table.field_names = ['Дата'] + [subject.name for subject in subjects]
     return table
+
+
+def prepare_pretty_table_for_grades(table: PrettyTable, subjects: list[Subject]) -> None:
+    table.field_names = ['Дата'] + [subject.name for subject in subjects]
+
+
+def prepare_pretty_table_for_tchs_list(table: PrettyTable) -> None:
+    table.field_names = ('Предмет', 'Учитель')
+
+
+def fill_pretty_table_with_tchs(table: PrettyTable, teachers_subjects: list[SubjectClassTeacher]) -> None:
+    """Заполняет пустую таблицу учителями и предметами"""
+    for t_s in teachers_subjects:
+        fio = f'{t_s.teacher.first_name} {t_s.teacher.second_name} {t_s.teacher.patronymic}'
+        table.add_row([t_s.subject.name, fio])
 
 
 def get_str_grades_for_table(grades: dict[Subject, list]) -> list[str]:
@@ -122,17 +140,8 @@ def get_str_date_for_table(date: datetime.date) -> str:
     return f'{date.day} {months_ru[date.month - 1]} {date.year}'
 
 
-def fill_pretty_table(raw_table: dict[datetime.date, dict[Subject, list]], pretty_table: PrettyTable) -> None:
+def fill_pretty_table_with_grades(raw_table: dict[datetime.date, dict[Subject, list]],
+                                  pretty_table: PrettyTable) -> None:
+    """Заполняет пустую таблицу оценками"""
     for grade_date, sbj_grades in raw_table.items():
         pretty_table.add_row([get_str_date_for_table(grade_date)] + get_str_grades_for_table(sbj_grades))
-
-
-def show_grades() -> None:
-    subjects = list(map(lambda x: x.subject,
-                        SubjectClassTeacher.manager.filter(school_class=State.user.school_class)))
-    raw_table = get_empty_table_dict(subjects)
-    grades = Grade.manager.filter(student=State.user)
-    fill_raw_table(raw_table, grades)
-    pretty_table = prepare_pretty_table(subjects)
-    fill_pretty_table(raw_table, pretty_table)
-    print(pretty_table)

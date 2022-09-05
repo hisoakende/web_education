@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 from user_interaction.services import get_str_of_classes_for_msg, get_subjects_for_table, State, get_empty_table_dict, \
-    fill_raw_table, get_str_grades_for_table, get_str_date_for_table
+    fill_raw_table_with_grades, get_str_grades_for_table, get_str_date_for_table
 from working_with_models.models import Subject, Grade
 
 
@@ -46,7 +46,7 @@ class TestFillRawTable(unittest.TestCase):
         grades = [Grade(5, 1, english, 1, datetime.date(2000, 1, 1)),
                   Grade(2, 1, maths, 1, datetime.date(2000, 1, 2)),
                   Grade(2, 1, maths, 1, datetime.date(2000, 1, 2))]
-        fill_raw_table(empty_table, grades)
+        fill_raw_table_with_grades(empty_table, grades)
         self.assertEqual(expected_result, empty_table)
 
 

@@ -80,20 +80,23 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
+    choose_exit_msg()
 
 
 def student_main_menu_choices_msg() -> None:
-    print('[1] - просмотреть оценки')
     base_main_menu_choices_msg()
+    print('[2] - посмотреть оценки')
+    print('[3] - показать моих учителей')
+    choose_exit_msg()
 
 
 def administrator_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
+    choose_exit_msg()
 
 
 def base_main_menu_choices_msg() -> None:
-    print('[0] - выйти из аккаунта')
-    choose_exit_msg()
+    print('[1] - выйти из аккаунта')
 
 
 def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:

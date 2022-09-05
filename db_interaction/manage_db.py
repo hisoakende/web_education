@@ -35,7 +35,7 @@ class Database(Singleton):
 
     def add_unexecuted_request(self, request: Request) -> None:
         if not isinstance(request, Request):
-            raise TypeError('Запрос не является экземпляром класса "Request"')
+            raise TypeError('Запрос не является экземпляром класса \'Request\'')
         self.__unexecuted_requests.append(request)
 
     def check_to_requests_exist(self) -> None:

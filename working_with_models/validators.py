@@ -96,7 +96,7 @@ class PasswordValidator(BaseValidator):
             self.check_for_range(len(password), 8, 25)
             self.check_for_characters(password, self.__allowed_characters)
             self.check_for_security(password)
-            hash_ = get_password_hash(password)
+            hash_ = get_password_hash(instance.second_name + password + instance.email)
         super().__set__(instance, hash_)
 
 
