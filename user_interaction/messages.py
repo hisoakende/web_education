@@ -80,7 +80,7 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
-    print('[2] - показать моих учеников')
+    print('[2] - поставить оценки')
     choose_exit_msg()
 
 
@@ -106,4 +106,16 @@ def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:
 
 
 def main_menu_msg() -> None:
-    strong_font('\nВозможные действия:')
+    strong_font('\nГлавное меню. Возможные действия:')
+
+
+def error_msg() -> None:
+    separate_action()
+    print_error('Произошла ошибка. Пожайлуста, запустите приложение снова. '
+                'Если ошибка не исчезла, напишите об это hisoakende@gmail.com')
+
+
+def print_grading_instruction() -> None:
+    print('Оценка ставится в формате: <идентификатор ученика>: оценка.\n'
+          'Оценки разделяются точкой с запятой \';\'\n'
+          'Например, 123: 5; 32: 3')

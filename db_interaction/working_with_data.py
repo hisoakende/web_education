@@ -89,7 +89,7 @@ class TablesManager(Singleton):
     (ВНИМАНИЕ: при автоматическом исполнении какого-либо запроса другие запросы,
     находящиеся в '__unexecuted_requests' экзеспляра класса 'Database', будут исполнены)
 
-    Работа класса: TablesManager.allowed_method(table_name, **kwargs)
+    Работа класса: TablesManager.allowed_method(**kwargs)
 
     _model - модель, с которой ведется работа в данный момент. Значение этого атрибута
     устанавливает сама модель перед вызовом метода этого класса

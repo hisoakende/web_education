@@ -31,8 +31,7 @@ def request_data(msg: str = invalid_input) -> Callable:
 def _get_choice(choices: Type[enum.Enum]) -> Union[None, enum.Enum]:
     choice = input(input_sign)
     if choice == '-1':
-        goodbye_msg()
-        quit()
+        raise SystemExit
     elif choice in choices:
         return choices(choice)
 

@@ -5,7 +5,7 @@ from psycopg2.extensions import connection, cursor
 from psycopg2.sql import Identifier, SQL
 
 from config import *
-from working_with_models.models import BaseModel
+from working_with_models.models import BaseModel, Student
 
 data_for_conn = {'database': DATABASE_NAME, 'user': DATABASE_USER, 'password': DATABASE_PASSWORD,
                  'host': DATABASE_HOST, 'port': DATABASE_PORT}
@@ -55,3 +55,12 @@ def init_for_related_model(self: BaseModel, some_attr: Any) -> None:
     """Метод __init__ для связанного класса, созданного в функции 'get_some_model'"""
     super(self.__class__, self).__init__()
     self.some_attr = some_attr
+
+
+def get_some_students() -> list[Student]:
+    raw_students = []
+    for x in range(1, 8):
+        student = Student('Имя', 'Фамилия', 'Отчество', f'email{x}@email.com', 'a' * 64, 1)
+        student.pk = x
+        raw_students.append(student)
+    return raw_students

@@ -27,6 +27,9 @@ class BaseModel(ABC):
         s = ', '.join(f'{attr}: {value}' for attr, value in self)
         return f'{self.__class__.__name__}({s})'
 
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
     @ClassOrInstanceProperty
     def manager(self) -> 'TablesManager':
         self._manager._model = self
@@ -105,6 +108,12 @@ class Student(User, BaseModel):
         super().__init__(first_name, second_name, patronymic, email, password)
         self.school_class = school_class
 
+    def __str__(self):
+        return f'{self.second_name} {self.first_name[0]}. {self.patronymic[0]}.'
+
+    def __hash__(self):
+        return hash(self.email)
+
 
 class Administrator(User, BaseModel):
     db_table = 'administrators'
@@ -126,11 +135,11 @@ class Subject(BaseModel):
         super().__init__()
         self.name = name
 
+    def __str__(self):
+        return self.name
+
     def __hash__(self):
         return hash(self.name)
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
 
 
 class Grade(BaseModel):

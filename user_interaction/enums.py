@@ -32,7 +32,11 @@ class EnumSchoolClassConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
         return self.name
 
 
-class BaseMainMenuChoiceConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
+class EnumBaseMainMenuChoiceConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
+    pass
+
+
+class EnumSubjectConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
     pass
 
 
@@ -40,17 +44,17 @@ def get_base_main_menu_choices() -> list[tuple[str, str]]:
     return [(choice, number) for choice, number in base_main_menu_choice.items()]
 
 
-teacher_main_menu_choice = BaseMainMenuChoiceConstructor(
+teacher_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'TeacherMainMenuChoice',
-    get_base_main_menu_choices() + [('show_my_students', '2')]
+    get_base_main_menu_choices() + [('rate_students', '2')]
 )
 
-student_main_menu_choice = BaseMainMenuChoiceConstructor(
+student_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'StudentMainMenuChoice',
     get_base_main_menu_choices() + [('show_grades', '2'), ('get_my_teachers', '3')]
 )
 
-administrator_main_menu_choice = BaseMainMenuChoiceConstructor(
+administrator_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'AdministratorMainMenuChoice',
     get_base_main_menu_choices() + []
 )
