@@ -1,6 +1,7 @@
 from string import ascii_letters, ascii_lowercase, ascii_uppercase, digits, punctuation
 from typing import Iterable, Any
 
+from other.exceptions import ValidationError
 from other.utils import alphabet_ru, get_password_hash
 
 
@@ -12,7 +13,7 @@ class BaseValidator:
     def check_for_characters(self, value: str, characters: Iterable) -> None:
         value = set(value.lower())
         if not value.issubset(characters):
-            raise ValueError(f'Поле {self.name} содержит недопустимые символы')
+            raise ValidationError(f'Поле {self.name} содержит недопустимые символы')
 
     @staticmethod
     def check_for_string(value: str) -> None:
@@ -21,8 +22,8 @@ class BaseValidator:
 
     def check_for_range(self, value: int, min_length: int, max_length: int) -> None:
         if value not in range(min_length, max_length + 1):
-            raise ValueError(f'Неккореткное значение {self.name}. '
-                             f'Допустимый диапозон - [{min_length};{max_length}]')
+            raise ValidationError(f'Неккореткное значение {self.name}. '
+                                  f'Допустимый диапозон - [{min_length};{max_length}]')
 
     def __set__(self, instance: 'BaseModel', value: Any) -> None:
         instance.__dict__[self.name] = value
@@ -43,7 +44,7 @@ class EmailValidator(BaseValidator):
     @staticmethod
     def check_for_at(value: str) -> None:
         if '@' not in value:
-            raise ValueError('Недопустимый email')
+            raise ValidationError('Недопустимый email')
 
     def __set__(self, instance: 'User', email: str) -> None:
         self.check_for_string(email)
@@ -60,7 +61,7 @@ class PasswordValidator(BaseValidator):
     def check_for_certain_characters(password: str, characters: str) -> None:
         password, characters = set(password), set(characters)
         if not password.intersection(characters):
-            raise ValueError(
+            raise ValidationError(
                 f'В пароле должен присутствовать хотя бы один символ из следующей коллекции: \n {characters}')
 
     def check_for_small_letter(self, password: str) -> None:
@@ -81,10 +82,10 @@ class PasswordValidator(BaseValidator):
         self.check_for_digit(password)
         self.check_for_special_character(password)
 
-    def is_hash(self, password):
+    def is_hash(self, password: str) -> bool:
         try:
             self.check_for_range(len(password), 64, 64)
-        except ValueError:
+        except ValidationError:
             return False
         return True
 
@@ -112,7 +113,7 @@ class ClassLetterValidator(BaseValidator):
     @staticmethod
     def check_for_correct_letter(letter: str) -> None:
         if letter.lower() not in list(alphabet_ru):
-            raise ValueError('Неккоректная буква класса')
+            raise ValidationError('Неккоректная буква класса')
 
     def __set__(self, instance: 'Class', letter: str) -> None:
         self.check_for_correct_letter(letter)

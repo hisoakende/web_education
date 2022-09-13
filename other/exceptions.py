@@ -14,3 +14,14 @@ class InstanceCantExist(Exception):
 
 class DontExistUnexecutedRequests(Exception):
     """Исключение, возникающие при попытке обработать SQL-запросы при их отсутсвии"""
+
+    def __str__(self) -> str:
+        return 'Отстувуют запросы для обработки'
+
+
+class InvalidGradingCommand(Exception):
+    """Исключение, возникающие при неправильной команде выставления оценок"""
+
+
+class ValidationError(Exception):
+    """Исключение, возникающие при валидации данных"""

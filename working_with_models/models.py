@@ -98,6 +98,8 @@ class Class(BaseModel):
 
 
 class Student(User, BaseModel):
+    """Модель ученика. Ученик может просматривать учителей, которые ведут у него занятия, а также свои оценки"""
+
     db_table = 'students'
     attributes = BaseModel.attributes + User.attributes + ('school_class',)
     related_data = {'school_class': Class}
@@ -116,6 +118,11 @@ class Student(User, BaseModel):
 
 
 class Administrator(User, BaseModel):
+    """
+    Модель администратора. Администратор добавляет в систему учителей/учеников,
+    может создавать классы, просматривать оценки любого ученика и ставить их ему и т.д.
+    """
+
     db_table = 'administrators'
     attributes = BaseModel.attributes + User.attributes
     name_ru = 'Администратор'
@@ -143,6 +150,8 @@ class Subject(BaseModel):
 
 
 class Grade(BaseModel):
+    """Модель школьной оценки"""
+
     db_table = 'grades'
     attributes = BaseModel.attributes + ('value', 'student', 'subject', 'teacher', 'date')
     related_data = {'student': Student, 'subject': Subject, 'teacher': Teacher}
@@ -160,6 +169,8 @@ class Grade(BaseModel):
 
 
 class Period(BaseModel):
+    """Период успеваемости. Например, четверть или полугодие"""
+
     db_table = 'periods'
     attributes = BaseModel.attributes + ('start', 'finish', 'is_current')
 
@@ -171,6 +182,8 @@ class Period(BaseModel):
 
 
 class SubjectClassTeacher(BaseModel):
+    """Комбинация учителя, предмета, который он преподает, и класса, у которого он ведет этот предмет"""
+
     db_table = 'subject_class_teacher'
     attributes = BaseModel.attributes + ('subject', 'school_class', 'teacher')
     related_data = {'subject': Subject, 'school_class': Class, 'teacher': Teacher}

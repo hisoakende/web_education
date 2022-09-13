@@ -1,18 +1,10 @@
-from getpass import getpass
-from typing import Union
-
 import psycopg2.errors
 
 from other.utils import get_password_hash
-from user_interaction.enums import ProfileType
-from user_interaction.messages import profile_type_msg, print_error, create_user_with_this_data_msg, \
-    print_grading_instruction
-from user_interaction.requesting_data_from_user import request_data, get_choice, get_answer
-from user_interaction.services import State, get_empty_table_dict, fill_raw_table_with_grades, \
-    prepare_pretty_table_for_grades, fill_pretty_table_with_grades, get_pretty_table, \
-    prepare_pretty_table_for_tchs_list, fill_pretty_table_with_tchs, print_class_grades
-from user_interaction.services import create_dict_with_user_data, try_to_create_user, profiles, UserTypes, \
-    try_to_insert_user_to_db
+from user_interaction.messages import profile_type_msg, create_user_with_this_data_msg, \
+    print_grading_instruction, preliminary_grades_msg
+from user_interaction.services import *
+from user_interaction.services import create_dict_with_user_data, try_to_create_user, profiles, try_to_insert_user_to_db
 from working_with_models.models import User, SubjectClassTeacher, Grade
 
 
@@ -29,10 +21,10 @@ def authenticate_user() -> Union[None, User]:
         return user
 
 
-def finish_registration(user: UserTypes) -> Union[None, UserTypes]:
+def finish_registration(user: User) -> Union[None, User]:
     try:
         is_created_user = try_to_insert_user_to_db(user)
-    except psycopg2.errors.UniqueViolation:
+    except psycopg2.errors.UniqueViolation as e:
         print_error('Аккаунт такого типа с данным email уже существует')
         return
     if is_created_user:
@@ -41,7 +33,7 @@ def finish_registration(user: UserTypes) -> Union[None, UserTypes]:
 
 
 @request_data('Повторите процедуру регистрации еще раз\n')
-def register_user() -> Union[None, UserTypes]:
+def register_user() -> Union[None, User]:
     """Регистрация пользователя"""
 
     type_profile = get_choice(ProfileType, profile_type_msg)
@@ -92,5 +84,13 @@ def get_my_teachers() -> None:
 def rate_students() -> None:
     """Позволяет выставить оценки ученикам"""
 
-    print_class_grades()
+    school_class = get_school_class_from_user()
+    subjects = list(map(lambda x: x.subject, SubjectClassTeacher.manager.filter(teacher=State.user)))
+    subject = get_subject_from_user(subjects)
+    print_class_grades_table(school_class, subject)
     print_grading_instruction()
+    preliminary_grades = get_preliminary_grades(subject)
+    if preliminary_grades == 'exit':
+        return
+    preliminary_grades_msg(preliminary_grades)
+    State.clear_cache()

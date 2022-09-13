@@ -13,14 +13,14 @@ class TestBaseValidator(unittest.TestCase):
 
     def test_check_for_characters(self):
         func = self.validator.check_for_characters
-        self.assertRaises(ValueError, func, 'abc', 'ab')
-        self.assertRaises(ValueError, func, 'ac', {'a', 'b'})
+        self.assertRaises(ValidationError, func, 'abc', 'ab')
+        self.assertRaises(ValidationError, func, 'ac', {'a', 'b'})
         self.assertIsNone(func('123', ['1', '2', '3', '4']))
         self.assertIsNone(func('12', ('1', '2')))
 
     def test_check_for_length(self):
-        self.assertRaises(ValueError, self.validator.check_for_range, 21, 0, 20)
-        self.assertRaises(ValueError, self.validator.check_for_range, 1, 5, 20)
+        self.assertRaises(ValidationError, self.validator.check_for_range, 21, 0, 20)
+        self.assertRaises(ValidationError, self.validator.check_for_range, 1, 5, 20)
 
         self.assertIsNone(self.validator.check_for_range(1, 1, 20))
 
@@ -51,7 +51,7 @@ class TestEmailValidator(unittest.TestCase):
         cls.validator.name = 'attr'
 
     def test_check_for_at(self):
-        self.assertRaises(ValueError, self.validator.check_for_at, 'some_email')
+        self.assertRaises(ValidationError, self.validator.check_for_at, 'some_email')
         self.assertIsNone(self.validator.check_for_at('some_email@mail.com'))
 
     def test_set(self):
@@ -68,7 +68,7 @@ class TestPasswordValidator(unittest.TestCase):
         cls.validator.name = 'attr'
 
     def test_check_for_certain_characters(self):
-        self.assertRaises(ValueError, self.validator.check_for_certain_characters, 'some_password', '0123456789')
+        self.assertRaises(ValidationError, self.validator.check_for_certain_characters, 'some_password', '0123456789')
         self.assertIsNone(self.validator.check_for_certain_characters('password1', '0123456789'))
 
     def test_set(self):
@@ -100,7 +100,7 @@ class TestClassLetterValidator(unittest.TestCase):
         cls.validator.name = 'attr'
 
     def test_check_for_correct_letter(self):
-        self.assertRaises(ValueError, self.validator.check_for_correct_letter, 'abcd')
+        self.assertRaises(ValidationError, self.validator.check_for_correct_letter, 'abcd')
         self.assertIsNone(self.validator.check_for_correct_letter('г'))
 
     def test_set(self):

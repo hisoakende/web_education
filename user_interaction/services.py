@@ -1,15 +1,16 @@
 import datetime
 from getpass import getpass
+from string import digits
 from typing import Type, Union, Literal
 
 from prettytable import PrettyTable
 
-from other.exceptions import InstanceCantExist
+from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError
 from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, EnumSubjectConstructor
 from user_interaction.messages import print_error, separate_action
-from user_interaction.requesting_data_from_user import get_answer, get_choice
+from user_interaction.requesting_data_from_user import get_answer, get_choice, request_data
 from working_with_models.models import Teacher, Student, Class, Administrator, Grade, Period, SubjectClassTeacher, \
-    Subject
+    Subject, User
 
 profiles = {ProfileType.student: Student,
             ProfileType.teacher: Teacher,
@@ -22,30 +23,30 @@ months_ru = ('Января', 'Февраля', 'Марта', 'Апреля', 'М
 
 
 class State:
-    """'
-    Current_dates' - активные даты, с которыми можно работать
+    """
+    'Current_dates' - активные даты, с которыми можно работать
     (ставить и просматривать оценки). Например, четверть или полугодие
     Такая изначальная структура 'cache' нужна для корректной работы функции,
-    соотносящий первичный ключ ученика и его порядковый номер в классе
+    которая соотносит ученика и его порядковый номер в классе (1, 2, 3 и т.д.)
     """
 
     user = None
     current_dates = None
-    cache = {'students_pks': {0: None}}
+    cache = {'students': {0: None}}
 
     def __new__(cls, *args, **kwargs):
         raise InstanceCantExist
 
     @classmethod
     def clear_cache(cls):
-        cls.cache = {'students_pks': {0: None}}
+        cls.cache = {'students': {0: None}}
 
 
 def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_name: str,
                        patronymic: str, email: str, password: str, *additional_field: str) -> UserTypes:
     try:
         user = model_class(first_name, second_name, patronymic, email, password, *additional_field)
-    except ValueError as exception:
+    except ValidationError as exception:
         print_error(f'{exception}')
     else:
         return user
@@ -59,14 +60,14 @@ def get_school_class_from_user() -> Class:
     return Class.manager.get(pk=class_pk)
 
 
-def get_additional_field(model_class: Type[UserTypes]) -> Union[None, str, Class]:
+def get_additional_field(model_class: Type[User]) -> Union[None, str, Class]:
     if model_class is Teacher:
         return get_answer('Введите информацию об учителе (например: Учитель географии, стаж - 20 лет):')
     elif model_class is Student:
         return get_school_class_from_user()
 
 
-def try_to_insert_user_to_db(user: UserTypes) -> bool:
+def try_to_insert_user_to_db(user: User) -> bool:
     create_user = get_choice(CreateUser)
     if create_user == CreateUser.no:
         return False
@@ -131,14 +132,14 @@ def get_pretty_table() -> PrettyTable:
 
 def get_prepared_students_field_names_view(raw_students: list[Student]) -> list[str]:
     """
-    Сохраняет соотношение порядкового номера ученика в классе (1, 2, 3, ...) и первичного ключа.
+    Сохраняет соотношение порядкового номера ученика в классе (1, 2, 3, ...) и самого ученика.
     Обрабтывает представление ученика в названии столбца.
     """
     prepared_students = []
-    last_index = max(State.cache['students_pks'].keys())
+    last_index = max(State.cache['students'].keys())
     for index in range(len(raw_students)):
         prepared_students.append(f'{last_index + index + 1}: {str(raw_students[index])}')
-        State.cache['students_pks'][last_index + index + 1] = raw_students[index].pk
+        State.cache['students'][last_index + index + 1] = raw_students[index]
     return prepared_students
 
 
@@ -152,7 +153,7 @@ def prepare_pretty_table_for_tchs_list(table: PrettyTable) -> None:
     table.field_names = ('Предмет', 'Учитель')
 
 
-def get_fio(user: UserTypes) -> str:
+def get_fio(user: User) -> str:
     return f'{user.first_name} {user.second_name} {user.patronymic}'
 
 
@@ -204,15 +205,130 @@ def get_table_with_students_grades_for_print(students: list[Student], subject: S
     return pretty_table
 
 
-def print_class_grades() -> None:
+def print_class_grades_table(school_class: Class, subject: Subject) -> None:
     """Печатает все оценки, полученные учениками определеннего класса по определенному предмету"""
 
-    school_class = get_school_class_from_user()
     students = sorted(Student.manager.filter(school_class=school_class), key=lambda st: st.second_name)
-    subjects = list(map(lambda x: x.subject, SubjectClassTeacher.manager.filter(teacher=State.user)))
-    subject = get_subject_from_user(subjects)
     for index in range(0, len(students), 7):
         students_part = students[index: index + 7]
         table = get_table_with_students_grades_for_print(students_part, subject)
         separate_action()
         print(table)
+
+
+def validate_command_chars(command: str) -> None:
+    for character in command:
+        if character not in ':(/),; ' + digits:
+            raise InvalidGradingCommand('Содержатся недопустимые символы')
+
+
+def validate_command_parts(command: list[str]) -> None:
+    if not all(command):
+        raise InvalidGradingCommand('Недопустимая форма')
+
+
+def validate_command_form(cmd: str) -> None:
+    if cmd.count(':') + cmd.count('(') + cmd.count('/') + cmd.count(')') < 5:
+        raise InvalidGradingCommand('Недопустимая форма')
+
+
+def get_student_from_grading_command(user_number: int) -> Student:
+    """Возвращает ученика, которому ставится оценка"""
+    if user_number not in State.cache['students'].keys() or user_number == 0:
+        raise InvalidGradingCommand('Неверный номер студента')
+    return State.cache['students'][user_number]
+
+
+def validate_grade_and_date(grade_and_date: list[str]) -> None:
+    if len(grade_and_date) != 4:
+        raise InvalidGradingCommand('Недопустимый формат оценки или даты')
+
+
+def check_location_of_special_chars_in_date(date: str) -> None:
+    if date.index(')') > date.index('/') > date.index('('):
+        return
+    raise InvalidGradingCommand('Недопустимый формат даты')
+
+
+def check_number_of_special_chars_in_date(date: str) -> None:
+    if date.count('/') != 2 or date.count('(') != 1 or date.count(')') != 1:
+        raise InvalidGradingCommand('Недопустимый формат даты')
+
+
+def check_date_in_current_period(date: datetime.date) -> None:
+    if date not in State.current_dates:
+        raise InvalidGradingCommand('Недопустимая дата')
+
+
+def split_grade_and_date(grade_and_date: str) -> tuple[int, list[int]]:
+    check_number_of_special_chars_in_date(grade_and_date)
+    check_location_of_special_chars_in_date(grade_and_date)
+    grade_and_date = grade_and_date.replace('(', ' ').replace('/', ' ').replace(')', ' ').split()
+    validate_grade_and_date(grade_and_date)
+    grade_value = int(grade_and_date[0])
+    date = list(map(int, grade_and_date[1:][::-1]))
+    return grade_value, date
+
+
+def process_part_of_one_student_command(part: str) -> tuple[Student, list[str]]:
+    user_number_and_grades = part.split(':')
+    validate_command_parts(user_number_and_grades)
+    student = get_student_from_grading_command(int(user_number_and_grades[0]))
+    grades_and_dates = user_number_and_grades[1].split(',')
+    validate_command_parts(grades_and_dates)
+    return student, grades_and_dates
+
+
+def create_date_from_command_values(date: list[int]) -> datetime.date:
+    try:
+        return datetime.date(*date)
+    except ValueError:
+        raise InvalidGradingCommand('Недопустимый формат даты')
+
+
+def create_grade_from_grading_command(grade_and_date: str, student: Student, subject: Subject) -> Grade:
+    grade_value, date = split_grade_and_date(grade_and_date)
+    date = create_date_from_command_values(date)
+    check_date_in_current_period(date)
+    return Grade(grade_value, student, subject, State.user, date)
+
+
+def get_user_and_his_grades_from_command(part: str, subject: Subject) -> tuple[Student, list[Grade]]:
+    student, grades_and_dates = process_part_of_one_student_command(part)
+    parsed_grades = [create_grade_from_grading_command(gr_and_dt, student, subject) for gr_and_dt in grades_and_dates]
+    return student, parsed_grades
+
+
+def grading_command_preprocessing(command: str) -> list[str]:
+    validate_command_chars(command)
+    validate_command_form(command)
+    command = command.replace(' ', '')
+    parts_by_users = command.split(';')
+    validate_command_parts(parts_by_users)
+    return parts_by_users
+
+
+def parse_student_grading_command(command: str, subject: Subject) -> list[tuple[Student, list[Grade]]]:
+    parts_by_users = grading_command_preprocessing(command)
+    parsed_data = [get_user_and_his_grades_from_command(part, subject) for part in parts_by_users]
+    return parsed_data
+
+
+def process_grading_command(command: str, subject: Subject) -> Union[None, list[tuple[Student, list[Grade]]]]:
+    try:
+        st_and_gr = parse_student_grading_command(command, subject)
+    except (InvalidGradingCommand, ValidationError) as e:
+        if isinstance(e, ValidationError):
+            e = 'Недопустимое значение оценки'
+        print_error(f'Неккоректная команда! {e}')
+        return
+    return st_and_gr
+
+
+@request_data(None)
+def get_preliminary_grades(subject: Subject) -> Union[Literal['exit'], None, list[tuple[Student, list[Grade]]]]:
+    """Запрашивает команду и возвращает предварительные оценки"""
+    student_grading_command = get_answer()
+    if student_grading_command == '-2':
+        return 'exit'
+    return process_grading_command(student_grading_command, subject)

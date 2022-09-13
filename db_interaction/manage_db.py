@@ -40,7 +40,7 @@ class Database(Singleton):
 
     def check_to_requests_exist(self) -> None:
         if not self.__unexecuted_requests:
-            raise DontExistUnexecutedRequests('Отстувуют запросы для обработки')
+            raise DontExistUnexecutedRequests
 
     def __execute_one_request(self, cur: cursor, request: Request) -> None:
         cur.execute(*request[:2])

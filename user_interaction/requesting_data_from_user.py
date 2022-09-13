@@ -2,16 +2,16 @@ import enum
 from functools import wraps
 from typing import Callable, Union, Any, Type
 
-from user_interaction.messages import goodbye_msg
+from user_interaction.enums import WhatToDoWithLogin
 
 input_sign = '\33[32m---> \033[0m'
 invalid_input = 'Неккоректный ввод!'
 
 
-def request_data(msg: str = invalid_input) -> Callable:
+def request_data(msg: Union[str, None] = invalid_input) -> Callable:
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> 'WhatToDoWithLogin':
+        def wrapper(*args: Any, **kwargs: Any) -> WhatToDoWithLogin:
             """
             Декоратор позволяет вызывать функцию до того момента,
             как она вернет значение, неравное 'None'
@@ -20,7 +20,8 @@ def request_data(msg: str = invalid_input) -> Callable:
                 data = func(*args, **kwargs)
                 if data is not None:
                     return data
-                print(f'\33[31m{msg}\33[0m')
+                if msg is not None:
+                    print(f'\33[31m{msg}\33[0m')
 
         return wrapper
 

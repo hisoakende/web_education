@@ -80,7 +80,7 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
-    print('[2] - поставить оценки')
+    print('[2] - посмотреть/поставить оценки')
     choose_exit_msg()
 
 
@@ -112,10 +112,20 @@ def main_menu_msg() -> None:
 def error_msg() -> None:
     separate_action()
     print_error('Произошла ошибка. Пожайлуста, запустите приложение снова. '
-                'Если ошибка не исчезла, напишите об это hisoakende@gmail.com')
+                'Если ошибка не исчезла, напишите об этом сюда: hisoakende@gmail.com')
 
 
 def print_grading_instruction() -> None:
-    print('Оценка ставится в формате: <идентификатор ученика>: оценка.\n'
-          'Оценки разделяются точкой с запятой \';\'\n'
-          'Например, 123: 5; 32: 3')
+    print('Оценка ставится в формате: <идентификатор ученика>: оценка\n'
+          'Оценки разным ученикам разделяются точкой с запятой \';\'\n'
+          'Сразу за оценкой в скобках указывается дата\n'
+          'Несколько оценок одному ученику ставятся через запятую\n'
+          'Например, 15: 1(1/1/2000), 2(15/1/2000); 32: 3(2/1/2000)\n'
+          '\n'
+          'Введите команду для выставления оценок, или [-2] для выхода:')
+
+
+def preliminary_grades_msg(preliminary_grades) -> None:
+    print('\nПоставить следующие оценки?')
+    for preliminary_grade in sorted(preliminary_grades, key=lambda x: x[0].second_name):
+        print(f'{preliminary_grade[0]}: {", ".join(f"{grade.value}({grade.date})" for grade in preliminary_grade[1])}')
