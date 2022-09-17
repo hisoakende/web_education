@@ -12,6 +12,7 @@ from user_interaction.user_navigation import welcome, main_menu
 
 def main():
     db = Database(DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT)
+    State.db = db
     TablesManager(db)
     set_current_dates()
     while True:

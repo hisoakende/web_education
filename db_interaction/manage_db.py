@@ -1,3 +1,4 @@
+from functools import wraps
 from typing import Callable
 
 import psycopg2
@@ -58,6 +59,7 @@ class Database(Singleton):
 
     @staticmethod
     def __process_connection(func: Callable) -> Callable:
+        @wraps(func)
         def wrapper(self: 'Database') -> None:
             self.check_to_requests_exist()
             self.__connect_to_db()

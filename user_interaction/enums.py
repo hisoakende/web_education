@@ -26,6 +26,11 @@ class CreateUser(enum.Enum, metaclass=ExtendedEnumMeta):
     no = '2'
 
 
+class SaveGrades(enum.Enum, metaclass=ExtendedEnumMeta):
+    yes = '1'
+    no = '2'
+
+
 class EnumSchoolClassConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
 
     def __str__(self) -> str:

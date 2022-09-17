@@ -1,8 +1,7 @@
 import psycopg2.errors
 
 from other.utils import get_password_hash
-from user_interaction.messages import profile_type_msg, create_user_with_this_data_msg, \
-    print_grading_instruction, preliminary_grades_msg
+from user_interaction.messages import profile_type_msg, create_user_with_this_data_msg
 from user_interaction.services import *
 from user_interaction.services import create_dict_with_user_data, try_to_create_user, profiles, try_to_insert_user_to_db
 from working_with_models.models import User, SubjectClassTeacher, Grade
@@ -24,7 +23,7 @@ def authenticate_user() -> Union[None, User]:
 def finish_registration(user: User) -> Union[None, User]:
     try:
         is_created_user = try_to_insert_user_to_db(user)
-    except psycopg2.errors.UniqueViolation as e:
+    except psycopg2.errors.UniqueViolation:
         print_error('Аккаунт такого типа с данным email уже существует')
         return
     if is_created_user:
@@ -84,13 +83,5 @@ def get_my_teachers() -> None:
 def rate_students() -> None:
     """Позволяет выставить оценки ученикам"""
 
-    school_class = get_school_class_from_user()
-    subjects = list(map(lambda x: x.subject, SubjectClassTeacher.manager.filter(teacher=State.user)))
-    subject = get_subject_from_user(subjects)
-    print_class_grades_table(school_class, subject)
-    print_grading_instruction()
-    preliminary_grades = get_preliminary_grades(subject)
-    if preliminary_grades == 'exit':
-        return
-    preliminary_grades_msg(preliminary_grades)
-    State.clear_cache()
+    school_class, subject = get_date_to_rate_students()
+    process_student_grading(school_class, subject)

@@ -1,6 +1,6 @@
 from typing import Type, Union
 
-from working_with_models.models import Teacher, Student, Class, Administrator
+from working_with_models.models import Teacher, Student, Class, Administrator, Grade
 
 
 def separate_action() -> None:
@@ -106,7 +106,7 @@ def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:
 
 
 def main_menu_msg() -> None:
-    strong_font('\nГлавное меню. Возможные действия:')
+    strong_font('Главное меню. Возможные действия:')
 
 
 def error_msg() -> None:
@@ -125,7 +125,13 @@ def print_grading_instruction() -> None:
           'Введите команду для выставления оценок, или [-2] для выхода:')
 
 
-def preliminary_grades_msg(preliminary_grades) -> None:
+def preliminary_grades_msg(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
     print('\nПоставить следующие оценки?')
     for preliminary_grade in sorted(preliminary_grades, key=lambda x: x[0].second_name):
         print(f'{preliminary_grade[0]}: {", ".join(f"{grade.value}({grade.date})" for grade in preliminary_grade[1])}')
+
+
+def save_grades_msg() -> None:
+    print('\n[1] - да, поставить')
+    print('[2] - нет, не ставить')
+    choose_exit_msg()

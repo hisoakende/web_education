@@ -25,3 +25,10 @@ class InvalidGradingCommand(Exception):
 
 class ValidationError(Exception):
     """Исключение, возникающие при валидации данных"""
+
+
+class NoCommand(Exception):
+    """
+    Исключение, возникающие при введение пользователем символов,
+    означающих выход из поля, в котором запрашивается команда
+    """

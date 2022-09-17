@@ -2,7 +2,8 @@ from user_interaction.enums import WhatToDoWithLogin, teacher_main_menu_choice, 
     student_main_menu_choice, administrator_main_menu_choice
 from user_interaction.messages import welcome_msg, authenticate_user_msg, \
     choice_about_login_msg, registration_user_msg, hello_user_msg, \
-    teacher_main_menu_choices_msg, student_main_menu_choices_msg, administrator_main_menu_choices_msg, main_menu_msg
+    teacher_main_menu_choices_msg, student_main_menu_choices_msg, administrator_main_menu_choices_msg, main_menu_msg, \
+    separate_action
 from user_interaction.requesting_data_from_user import get_choice
 from user_interaction.services import State
 from user_interaction.user_actions import authenticate_user, register_user, logout, show_grades, get_my_teachers, \
@@ -38,6 +39,7 @@ user_actions_and_choices = {
 def main_menu() -> None:
     """Функция для работы с главным меню"""
 
+    separate_action()
     main_menu_msg()
     action_set, choices, main_menu_choices_msg = user_actions_and_choices[State.user.__class__.__name__]
     what_to_do_choice = get_choice(choices, main_menu_choices_msg)

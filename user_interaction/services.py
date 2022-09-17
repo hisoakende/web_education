@@ -5,9 +5,11 @@ from typing import Type, Union, Literal
 
 from prettytable import PrettyTable
 
-from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError
-from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, EnumSubjectConstructor
-from user_interaction.messages import print_error, separate_action
+from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError, NoCommand
+from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, EnumSubjectConstructor, \
+    SaveGrades
+from user_interaction.messages import print_error, separate_action, print_grading_instruction, preliminary_grades_msg, \
+    save_grades_msg
 from user_interaction.requesting_data_from_user import get_answer, get_choice, request_data
 from working_with_models.models import Teacher, Student, Class, Administrator, Grade, Period, SubjectClassTeacher, \
     Subject, User
@@ -30,9 +32,10 @@ class State:
     которая соотносит ученика и его порядковый номер в классе (1, 2, 3 и т.д.)
     """
 
+    db = None
+    cache = {'students': {0: None}}
     user = None
     current_dates = None
-    cache = {'students': {0: None}}
 
     def __new__(cls, *args, **kwargs):
         raise InstanceCantExist
@@ -326,9 +329,39 @@ def process_grading_command(command: str, subject: Subject) -> Union[None, list[
 
 
 @request_data(None)
-def get_preliminary_grades(subject: Subject) -> Union[Literal['exit'], None, list[tuple[Student, list[Grade]]]]:
+def get_preliminary_grades(subject: Subject) -> Union[None, list[tuple[Student, list[Grade]]]]:
     """Запрашивает команду и возвращает предварительные оценки"""
     student_grading_command = get_answer()
     if student_grading_command == '-2':
-        return 'exit'
+        raise NoCommand
     return process_grading_command(student_grading_command, subject)
+
+
+def save_grades_from_grading_command(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
+    for user_and_his_grades in preliminary_grades:
+        for grade in user_and_his_grades[1]:
+            grade.manager.create()
+
+
+def get_date_to_rate_students() -> tuple[Class, Subject]:
+    school_class = get_school_class_from_user()
+    subjects = list(map(lambda x: x.subject, SubjectClassTeacher.manager.filter(teacher=State.user)))
+    subject = get_subject_from_user(subjects)
+    return school_class, subject
+
+
+def process_student_grading(school_class: Class, subject: Subject) -> None:
+    State.clear_cache()
+    print_class_grades_table(school_class, subject)
+    print_grading_instruction()
+    try:
+        preliminary_grades = get_preliminary_grades(subject)
+    except NoCommand:
+        return
+    preliminary_grades_msg(preliminary_grades)
+    save_grades_choice = get_choice(SaveGrades, save_grades_msg)
+    if save_grades_choice == SaveGrades.no:
+        return
+    save_grades_from_grading_command(preliminary_grades)
+    State.db.execute_transaction()
+    process_student_grading(school_class, subject)
