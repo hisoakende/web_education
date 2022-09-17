@@ -5,14 +5,14 @@ from typing import Type, Union, Literal
 
 from prettytable import PrettyTable
 
-from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError, NoCommand
-from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, EnumSubjectConstructor, \
-    SaveGrades
+from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError, NoCommand, \
+    NoSubjectsTaughtByTheTeacher
+from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, SaveGrades
 from user_interaction.messages import print_error, separate_action, print_grading_instruction, preliminary_grades_msg, \
-    save_grades_msg
+    save_grades_msg, print_objs_for_the_user_to_select
 from user_interaction.requesting_data_from_user import get_answer, get_choice, request_data
 from working_with_models.models import Teacher, Student, Class, Administrator, Grade, Period, SubjectClassTeacher, \
-    Subject, User
+    Subject, User, BaseModel
 
 profiles = {ProfileType.student: Student,
             ProfileType.teacher: Teacher,
@@ -33,7 +33,7 @@ class State:
     """
 
     db = None
-    cache = {'students': {0: None}}
+    cache = {'students': [None]}
     user = None
     current_dates = None
 
@@ -42,7 +42,7 @@ class State:
 
     @classmethod
     def clear_cache(cls):
-        cls.cache = {'students': {0: None}}
+        cls.cache = {'students': [None]}
 
 
 def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_name: str,
@@ -55,19 +55,19 @@ def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_nam
         return user
 
 
-def get_school_class_from_user() -> Class:
-    classes = get_classes_to_select()
-    classes_enum = EnumSchoolClassConstructor('SchoolClassEnum', classes)
-    choices_msg = get_str_of_choices(classes)
-    class_pk = get_choice(classes_enum, f'Введите класс:\n{choices_msg}').value
-    return Class.manager.get(pk=class_pk)
+def get_obj_from_user(objs: list[BaseModel], obj_name: str) -> BaseModel:
+    classes_enum = EnumSchoolClassConstructor('SchoolClassEnum', [(str(c), str(i)) for i, c in enumerate(objs, 1)])
+    print_objs_for_the_user_to_select(obj_name, objs)
+    class_number = get_choice(classes_enum).value
+    return objs[int(class_number) - 1]
 
 
 def get_additional_field(model_class: Type[User]) -> Union[None, str, Class]:
     if model_class is Teacher:
         return get_answer('Введите информацию об учителе (например: Учитель географии, стаж - 20 лет):')
     elif model_class is Student:
-        return get_school_class_from_user()
+        classes = Class.manager.all()
+        return get_obj_from_user(classes, 'класс')
 
 
 def try_to_insert_user_to_db(user: User) -> bool:
@@ -88,15 +88,6 @@ def create_dict_with_user_data(model_class: Type[UserTypes]) -> dict[str, str]:
     if model_class is not Administrator:
         result['additional_field'] = get_additional_field(model_class)
     return result
-
-
-def get_classes_to_select() -> list[tuple[str, str]]:
-    classes = Class.manager.all(execution=True)
-    return [(str(cls.number) + cls.letter, str(cls.pk)) for cls in classes]
-
-
-def get_str_of_choices(objs: list[tuple[str, str]]) -> str:
-    return '\n'.join(f'[{obj[1]}] - {obj[0]}' for obj in objs)
 
 
 def set_current_dates() -> None:
@@ -139,10 +130,10 @@ def get_prepared_students_field_names_view(raw_students: list[Student]) -> list[
     Обрабтывает представление ученика в названии столбца.
     """
     prepared_students = []
-    last_index = max(State.cache['students'].keys())
+    last_index = len(State.cache['students']) - 1
     for index in range(len(raw_students)):
         prepared_students.append(f'{last_index + index + 1}: {str(raw_students[index])}')
-        State.cache['students'][last_index + index + 1] = raw_students[index]
+        State.cache['students'].append(raw_students[index])
     return prepared_students
 
 
@@ -183,16 +174,6 @@ def fill_pretty_table_with_grades(raw_table: dict[datetime.date, dict[Subject, l
 
 def get_subjects_to_select(subjects: list[Subject]) -> list[tuple[str, str]]:
     return [(subject.name, str(subject.pk)) for subject in subjects]
-
-
-def get_subject_from_user(subjects: list[Subject]) -> Subject:
-    """Позволяет получить школьный предмет, который выбрал пользователь"""
-
-    subjects_to_select = get_subjects_to_select(subjects)
-    subjects_enum = EnumSubjectConstructor('SubjectEnum', subjects_to_select)
-    choices_msg = get_str_of_choices(subjects_to_select)
-    subject_pk = get_choice(subjects_enum, f'Выберете класс:\n{choices_msg}').value
-    return Subject.manager.get(pk=subject_pk)
 
 
 def get_table_with_students_grades_for_print(students: list[Student], subject: Subject) -> PrettyTable:
@@ -237,9 +218,9 @@ def validate_command_form(cmd: str) -> None:
 
 def get_student_from_grading_command(user_number: int) -> Student:
     """Возвращает ученика, которому ставится оценка"""
-    if user_number not in State.cache['students'].keys() or user_number == 0:
-        raise InvalidGradingCommand('Неверный номер студента')
-    return State.cache['students'][user_number]
+    if len(State.cache['students']) > user_number > 0:
+        return State.cache['students'][user_number]
+    raise InvalidGradingCommand('Неверный номер студента')
 
 
 def validate_grade_and_date(grade_and_date: list[str]) -> None:
@@ -344,9 +325,13 @@ def save_grades_from_grading_command(preliminary_grades: list[tuple[Student, lis
 
 
 def get_date_to_rate_students() -> tuple[Class, Subject]:
-    school_class = get_school_class_from_user()
-    subjects = list(map(lambda x: x.subject, SubjectClassTeacher.manager.filter(teacher=State.user)))
-    subject = get_subject_from_user(subjects)
+    s_t_c = SubjectClassTeacher.manager.filter(teacher=State.user)
+    if not s_t_c:
+        raise NoSubjectsTaughtByTheTeacher
+    classes = [element.school_class for element in s_t_c]
+    school_class = get_obj_from_user(classes, 'класс')
+    subjects = [element.subject for element in s_t_c if element.school_class is school_class]
+    subject = get_obj_from_user(subjects, 'предмет')
     return school_class, subject
 
 

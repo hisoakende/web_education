@@ -96,6 +96,9 @@ class Class(BaseModel):
         self.letter = letter
         self.classroom_teacher = classroom_teacher
 
+    def __str__(self) -> str:
+        return str(self.number) + self.letter
+
 
 class Student(User, BaseModel):
     """Модель ученика. Ученик может просматривать учителей, которые ведут у него занятия, а также свои оценки"""

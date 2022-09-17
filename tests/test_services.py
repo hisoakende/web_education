@@ -5,15 +5,6 @@ from user_interaction.services import *
 from working_with_models.models import Subject, Grade, Student
 
 
-class TestGetStrOfClassesForMsg(unittest.TestCase):
-
-    def test_for_correct_result(self):
-        data = [('11C', '1'), ('10A', '2')]
-        result = get_str_of_choices(data)
-        expected_result = '[1] - 11C\n[2] - 10A'
-        self.assertEqual(expected_result, result)
-
-
 class TestGetSubjectsForTable(unittest.TestCase):
 
     def test_for_correct_result(self):
@@ -70,7 +61,7 @@ class TestState(unittest.TestCase):
     def test_clear_cache(self):
         State.cache['some_key'] = 'some_value'
         State.clear_cache()
-        self.assertEqual({'students': {0: None}}, State.cache)
+        self.assertEqual({'students': [None]}, State.cache)
 
 
 class TestGetPrepareDStudentsFieldNamesView(unittest.TestCase):
@@ -191,6 +182,7 @@ class TestProcessPartOfOneStudentCommand(unittest.TestCase):
         State.cache['students'][1] = some_student
         expected_result = (some_student, ['5(28/10/2022)', '3(29/10/2022)'])
         self.assertEqual(expected_result, process_part_of_one_student_command('1:5(28/10/2022),3(29/10/2022)'))
+        State.clear_cache()
 
 
 class TestCreateDateFromCommandValues(unittest.TestCase):
@@ -209,13 +201,14 @@ class TestGetUserAndHisGradesFromCommand(unittest.TestCase):
         State.user = 1
         State.current_dates = [datetime.date(2022, 1, 1), datetime.date(2022, 1, 2)]
         student = Student('Ученик', 'Некоторый', 'Некоторович', 'some@email', 'a' * 64, 1)
-        State.cache['students'][15] = student
+        State.cache['students'].append(student)
         subject = Subject('Математика')
         grade1 = Grade(5, student, subject, 1, datetime.date(2022, 1, 1))
         grade2 = Grade(3, student, subject, 1, datetime.date(2022, 1, 2))
         expected_result = (student, [grade1, grade2])
-        command = '15:5(1/1/2022),3(2/1/2022)'
+        command = '1:5(1/1/2022),3(2/1/2022)'
         self.assertEqual(str(expected_result), str(get_user_and_his_grades_from_command(command, subject)))
+        State.clear_cache()
 
 
 class TestGradingCommandPreprocessing(unittest.TestCase):
@@ -233,13 +226,14 @@ class TestParseStudentGradingCommand(unittest.TestCase):
         State.current_dates = [datetime.date(2022, 9, 13), datetime.date(2022, 9, 12)]
         student1 = Student('УченикОдин', 'НекоторыйОдин', 'НекоторовичОдин', 'some1@email', 'a' * 64, 1)
         student2 = Student('УченикДва', 'НекоторыйДва', 'НекоторовичДва', 'some2@email', 'b' * 64, 1)
-        State.cache['students'][10] = student1
-        State.cache['students'][9] = student2
+        State.cache['students'].append(student1)
+        State.cache['students'].append(student2)
         subject = Subject('Математика')
         grade1_1 = Grade(5, student1, subject, 1, datetime.date(2022, 9, 13))
         grade1_2 = Grade(3, student1, subject, 1, datetime.date(2022, 9, 12))
         grade2_1 = Grade(3, student2, subject, 1, datetime.date(2022, 9, 13))
         grade2_2 = Grade(2, student2, subject, 1, datetime.date(2022, 9, 12))
         expected_result = [(student1, [grade1_1, grade1_2]), (student2, [grade2_1, grade2_2])]
-        command = '10: 5(13/9/2022), 3(12/9/2022); 9: 3(13/9/2022), 2(12/9/2022)'
+        command = '1: 5(13/9/2022), 3(12/9/2022); 2: 3(13/9/2022), 2(12/9/2022)'
         self.assertEqual(str(expected_result), str(parse_student_grading_command(command, subject)))
+        State.clear_cache()

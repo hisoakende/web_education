@@ -83,5 +83,9 @@ def get_my_teachers() -> None:
 def rate_students() -> None:
     """Позволяет выставить оценки ученикам"""
 
-    school_class, subject = get_date_to_rate_students()
-    process_student_grading(school_class, subject)
+    try:
+        school_class, subject = get_date_to_rate_students()
+    except NoSubjectsTaughtByTheTeacher:
+        print_error('Вы не ведете ни одного предмета!')
+    else:
+        process_student_grading(school_class, subject)

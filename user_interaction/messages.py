@@ -1,6 +1,6 @@
 from typing import Type, Union
 
-from working_with_models.models import Teacher, Student, Class, Administrator, Grade
+from working_with_models.models import Teacher, Student, Class, Administrator, Grade, BaseModel
 
 
 def separate_action() -> None:
@@ -134,4 +134,10 @@ def preliminary_grades_msg(preliminary_grades: list[tuple[Student, list[Grade]]]
 def save_grades_msg() -> None:
     print('\n[1] - да, поставить')
     print('[2] - нет, не ставить')
+    choose_exit_msg()
+
+
+def print_objs_for_the_user_to_select(obj_name: str, objs: list[BaseModel]) -> None:
+    print(f'Выберете {obj_name}:')
+    print('\n'.join(f'[{i}] - {schl_cls}' for i, schl_cls in enumerate(objs, 1)))
     choose_exit_msg()
