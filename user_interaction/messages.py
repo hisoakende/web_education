@@ -81,6 +81,15 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
     print('[2] - посмотреть/поставить оценки')
+    print('[3] - классное руководство')
+    choose_exit_msg()
+
+
+def manage_user_choices_msg() -> None:
+    separate_action()
+    print('Возможные действия:')
+    print('[1] - показать успеваемость класса')
+    print('[2] - показать успеваемость одного ученика')
     choose_exit_msg()
 
 
@@ -106,7 +115,8 @@ def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:
 
 
 def main_menu_msg() -> None:
-    strong_font('Главное меню. Возможные действия:')
+    strong_font('Главное меню')
+    print('Возможные действия:')
 
 
 def error_msg() -> None:

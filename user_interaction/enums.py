@@ -1,7 +1,7 @@
 import enum
 from typing import Any
 
-base_main_menu_choice = {'exit': '1'}
+base_main_menu_choice = [('exit', '1')]
 
 
 class ExtendedEnumMeta(enum.EnumMeta):
@@ -31,6 +31,11 @@ class SaveGrades(enum.Enum, metaclass=ExtendedEnumMeta):
     no = '2'
 
 
+class ManageClassChoices(enum.Enum, metaclass=ExtendedEnumMeta):
+    print_school_class_grades = '1'
+    print_grades_for_one_student = '2'
+
+
 class EnumSchoolClassConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
 
     def __str__(self) -> str:
@@ -45,21 +50,17 @@ class EnumSubjectConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
     pass
 
 
-def get_base_main_menu_choices() -> list[tuple[str, str]]:
-    return [(choice, number) for choice, number in base_main_menu_choice.items()]
-
-
 teacher_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'TeacherMainMenuChoice',
-    get_base_main_menu_choices() + [('rate_students', '2')]
+    base_main_menu_choice + [('rate_students', '2'), ('manage_class', '3')]
 )
 
 student_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'StudentMainMenuChoice',
-    get_base_main_menu_choices() + [('show_grades', '2'), ('get_my_teachers', '3')]
+    base_main_menu_choice + [('show_grades', '2'), ('get_my_teachers', '3')]
 )
 
 administrator_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'AdministratorMainMenuChoice',
-    get_base_main_menu_choices() + []
+    base_main_menu_choice
 )

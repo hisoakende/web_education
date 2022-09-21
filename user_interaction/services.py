@@ -55,11 +55,11 @@ def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_nam
         return user
 
 
-def get_obj_from_user(objs: list[BaseModel], obj_name: str) -> BaseModel:
-    classes_enum = EnumSchoolClassConstructor('SchoolClassEnum', [(str(c), str(i)) for i, c in enumerate(objs, 1)])
-    print_objs_for_the_user_to_select(obj_name, objs)
-    class_number = get_choice(classes_enum).value
-    return objs[int(class_number) - 1]
+def get_obj_from_user(objs: list[BaseModel], obj_name_str: str) -> BaseModel:
+    objs_enum = EnumSchoolClassConstructor('ObjsEnum', [(str(c), str(i)) for i, c in enumerate(objs, 1)])
+    print_objs_for_the_user_to_select(obj_name_str, objs)
+    obj_number = get_choice(objs_enum).value
+    return objs[int(obj_number) - 1]
 
 
 def get_additional_field(model_class: Type[User]) -> Union[None, str, Class]:
@@ -328,7 +328,7 @@ def get_date_to_rate_students() -> tuple[Class, Subject]:
     s_t_c = SubjectClassTeacher.manager.filter(teacher=State.user)
     if not s_t_c:
         raise NoSubjectsTaughtByTheTeacher
-    classes = [element.school_class for element in s_t_c]
+    classes = get_objs_from_sct(s_t_c, 'school_class')
     school_class = get_obj_from_user(classes, 'класс')
     subjects = [element.subject for element in s_t_c if element.school_class is school_class]
     subject = get_obj_from_user(subjects, 'предмет')
@@ -350,3 +350,8 @@ def process_student_grading(school_class: Class, subject: Subject) -> None:
     save_grades_from_grading_command(preliminary_grades)
     State.db.execute_transaction()
     process_student_grading(school_class, subject)
+
+
+def get_objs_from_sct(raw_objs: list[SubjectClassTeacher], model: str) -> list[Union[Subject, Class, Teacher]]:
+    """Возвращает конкректные объекты ('Subject', 'Class', 'Teacher'). sct - subject_class_teacher"""
+    return [getattr(obj, model) for obj in raw_objs]

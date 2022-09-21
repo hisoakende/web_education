@@ -1,6 +1,6 @@
 import enum
 from functools import wraps
-from typing import Callable, Union, Any, Type
+from typing import Callable, Union, Any, Type, Optional
 
 from user_interaction.enums import WhatToDoWithLogin
 
@@ -8,7 +8,7 @@ input_sign = '\33[32m---> \033[0m'
 invalid_input = 'Неккоректный ввод!'
 
 
-def request_data(msg: Union[str, None] = invalid_input) -> Callable:
+def request_data(msg: Optional[str] = invalid_input) -> Callable:
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> WhatToDoWithLogin:
@@ -29,7 +29,7 @@ def request_data(msg: Union[str, None] = invalid_input) -> Callable:
 
 
 @request_data()
-def _get_choice(choices: Type[enum.Enum]) -> Union[None, enum.Enum]:
+def _get_choice(choices: Type[enum.Enum]) -> Optional[enum.Enum]:
     choice = input(input_sign)
     if choice == '-1':
         raise SystemExit
@@ -38,7 +38,7 @@ def _get_choice(choices: Type[enum.Enum]) -> Union[None, enum.Enum]:
 
 
 @request_data()
-def _get_answer(func_input: Callable = input, func_check: Callable = lambda x: x) -> Union[None, str]:
+def _get_answer(func_input: Callable = input, func_check: Callable = lambda x: x) -> Optional[str]:
     answer = func_input(input_sign)
     if func_check(answer):
         return answer
@@ -51,11 +51,11 @@ def print_message(msg: Union[Callable, str, None] = None) -> None:
         msg()
 
 
-def get_choice(choices: Type[enum.Enum], msg: Union[Callable, str, None] = None) -> Union[None, enum.Enum]:
+def get_choice(choices: Type[enum.Enum], msg: Union[Callable, str, None] = None) -> Optional[enum.Enum]:
     print_message(msg)
     return _get_choice(choices)
 
 
-def get_answer(msg: Union[Callable, str, None] = None, func_input: Callable = input) -> Union[None, str]:
+def get_answer(msg: Union[Callable, str, None] = None, func_input: Callable = input) -> Optional[str]:
     print_message(msg)
     return _get_answer(func_input)

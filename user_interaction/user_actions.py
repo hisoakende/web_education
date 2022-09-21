@@ -1,3 +1,5 @@
+from typing import Optional
+
 import psycopg2.errors
 
 from other.utils import get_password_hash
@@ -55,13 +57,14 @@ def logout() -> None:
     State.user = None
 
 
-def show_grades() -> None:
+def show_grades(student: Optional[User]) -> None:
     """Показывает все оценки ученика за текущий период (атрибут 'current_dates' класса State)"""
 
-    subjects = list(map(lambda x: x.subject,
-                        SubjectClassTeacher.manager.filter(school_class=State.user.school_class)))
+    if student is None:
+        student = State.user
+    subjects = get_objs_from_sct(SubjectClassTeacher.manager.filter(school_class=student.school_class), 'subject')
     raw_table = get_empty_table_dict(subjects)
-    grades = Grade.manager.filter(student=State.user)
+    grades = Grade.manager.filter(student=student)
     fill_raw_table_with_grades(raw_table, grades, 'subject')
     pretty_table = get_pretty_table()
     prepare_pretty_table_for_grades(pretty_table, subjects)
@@ -89,3 +92,16 @@ def rate_students() -> None:
         print_error('Вы не ведете ни одного предмета!')
     else:
         process_student_grading(school_class, subject)
+
+
+def print_school_class_grades(school_class: Class) -> None:
+    subjects = get_objs_from_sct(SubjectClassTeacher.manager.filter(school_class=school_class), 'subject')
+    subject = get_obj_from_user(subjects, 'предмет')
+    print_class_grades_table(school_class, subject)
+
+
+def print_grades_for_one_student(school_class: Class) -> None:
+    students = sorted(Student.manager.filter(school_class=school_class), key=lambda x: x.second_name)
+    student = get_obj_from_user(students, 'ученика')
+    print(f'Успеваемость {student}:')
+    show_grades(student)
