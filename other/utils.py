@@ -65,7 +65,7 @@ def add_data_to_lists(attr: str, value: ModelValuesTypes,
 
 def process_attr_and_value(attr: str, value: ModelValuesTypes,
                            model: 'BaseModel') -> tuple[str, Union[int, str]]:
-    if attr in model.related_data:
+    if attr in model.related_data or any(attr in r_model.related_data for r_model in model.related_data.values()):
         value = get_pk_related_entry(value)
         attr = attr + '_id'
     return attr, value
@@ -150,14 +150,6 @@ def get_dict_line_like_model(model: 'BaseModel', dict_line: dict[str, ValuesType
     obj = model(**dict_line)
     obj.pk = pk
     return obj
-
-
-def get_column_view_for_db(model: 'BaseModel', attr: str) -> str:
-    if attr == 'pk':
-        return 'id'
-    elif attr in model.related_data:
-        return f'{attr}_id'
-    return attr
 
 
 def get_table_and_column_for_where_part(model: 'BaseModel', condition: str) -> tuple[str, str]:

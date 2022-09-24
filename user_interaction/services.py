@@ -1,7 +1,7 @@
 import datetime
 from getpass import getpass
 from string import digits
-from typing import Type, Union, Literal, Callable
+from typing import Type, Union, Literal, Callable, Optional
 
 from prettytable import PrettyTable
 
@@ -148,7 +148,7 @@ def prepare_pretty_table_for_tchs_list(table: PrettyTable) -> None:
 
 
 def get_fio(user: User) -> str:
-    return f'{user.first_name} {user.second_name} {user.patronymic}'
+    return f'{user.second_name} {user.first_name} {user.patronymic}'
 
 
 def fill_pretty_table_with_tchs(table: PrettyTable, teachers_subjects: list[SubjectClassTeacher]) -> None:
@@ -182,7 +182,7 @@ def get_table_with_students_grades_for_print(students: list[Student], subject: S
     pretty_table = get_pretty_table()
     prepare_pretty_table_for_grades(pretty_table, students)
     raw_table = get_empty_table_dict(students)
-    grades = Grade.manager.filter(teacher=State.user, subject=subject)
+    grades = Grade.manager.filter(subject=subject)
     grades = list(filter(lambda grade: grade.student in students, grades))
     fill_raw_table_with_grades(raw_table, grades, 'student')
     fill_pretty_table_with_grades(raw_table, pretty_table)
@@ -274,7 +274,7 @@ def create_grade_from_grading_command(grade_and_date: str, student: Student, sub
     grade_value, date = split_grade_and_date(grade_and_date)
     date = create_date_from_command_values(date)
     check_date_in_current_period(date)
-    return Grade(grade_value, student, subject, State.user, date)
+    return Grade(grade_value, student, subject, date)
 
 
 def get_user_and_his_grades_from_command(part: str, subject: Subject) -> tuple[Student, list[Grade]]:
@@ -318,15 +318,29 @@ def get_preliminary_grades(subject: Subject) -> Union[None, list[tuple[Student, 
     return process_grading_command(student_grading_command, subject)
 
 
-def get_date_to_rate_students() -> tuple[Class, Subject]:
-    s_t_c = SubjectClassTeacher.manager.filter(teacher=State.user)
-    if not s_t_c:
+def get_data_to_rate_students(teacher: Optional[Teacher] = None) -> tuple[Class, Subject]:
+    if teacher is None:
+        s_c_t = SubjectClassTeacher.manager.all()
+    else:
+        s_c_t = SubjectClassTeacher.manager.filter(teacher=teacher)
+    if not s_c_t:
         raise NoSubjectsTaughtByTheTeacher
-    classes = get_objs_from_sct(s_t_c, 'school_class')
+    classes = get_unique_elements(get_objs_from_sct(s_c_t, 'school_class'))
     school_class = get_obj_from_user(classes, 'класс')
-    subjects = [element.subject for element in s_t_c if element.school_class is school_class]
+    subjects = [el.subject for el in s_c_t if el.school_class.pk is school_class.pk]
+    subjects = get_unique_elements(subjects)
     subject = get_obj_from_user(subjects, 'предмет')
     return school_class, subject
+
+
+def get_unique_elements(objs: list[BaseModel]) -> list[BaseModel]:
+    pks, result = [], []
+    for obj in objs:
+        if obj.pk in pks:
+            continue
+        result.append(obj)
+        pks.append(obj.pk)
+    return result
 
 
 def save_grades_from_grading_command(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
@@ -340,8 +354,7 @@ def iterate_over_preliminary_grades(preliminary_grades: list[tuple[Student, list
 
 
 def remove_one_grade_from_grading_command(grade: Grade) -> None:
-    grades = Grade.manager.filter(value=grade.value, student=grade.student, subject=grade.subject,
-                                  teacher=grade.teacher, date=grade.date)
+    grades = Grade.manager.filter(value=grade.value, student=grade.student, subject=grade.subject, date=grade.date)
     if not grades:
         raise SemanticCommandError
     grades[0].manager.delete()
@@ -370,6 +383,7 @@ def get_save_change_choice() -> bool:
 
 
 def process_student_grading(school_class: Class, subject: Subject) -> None:
+    """Оценивание студента"""
     while True:
         State.clear_cache()
         print_class_grades_table(school_class, subject)

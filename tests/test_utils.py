@@ -177,22 +177,6 @@ class TestGetDictLineLikeModel(unittest.TestCase):
         self.assertEqual(expected_result, result.__str__())
 
 
-class TestGetColumnViewForDb(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.model = get_some_model()
-
-    def test_for_attr_is_pk(self):
-        self.assertEqual('id', get_column_view_for_db(self.model, 'pk'))
-
-    def test_for_attr_in_related_data(self):
-        self.assertEqual('related_model_id', get_column_view_for_db(self.model, 'related_model'))
-
-    def test_for_other_attrs(self):
-        self.assertEqual('abcd', get_column_view_for_db(self.model, 'abcd'))
-
-
 class TestGetTableAndColumnForWherePart(unittest.TestCase):
 
     @classmethod

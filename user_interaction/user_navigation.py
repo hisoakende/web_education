@@ -1,13 +1,16 @@
 from user_interaction.enums import WhatToDoWithLogin, teacher_main_menu_choice, \
-    student_main_menu_choice, administrator_main_menu_choice, ManageClassChoices
+    student_main_menu_choice, administrator_main_menu_choice, ManageClassPerformanceChoices, \
+    ManageSchoolPerformanceChoices
 from user_interaction.messages import welcome_msg, authenticate_user_msg, \
     choice_about_login_msg, registration_user_msg, hello_user_msg, teacher_main_menu_choices_msg, \
     student_main_menu_choices_msg, administrator_main_menu_choices_msg, main_menu_msg, separate_action, print_error, \
-    manage_user_choices_msg
+    manage_class_performance_choices_msg, manage_school_performance_choices_msg
 from user_interaction.requesting_data_from_user import get_choice
-from user_interaction.services import State, get_obj_from_user, get_objs_from_sct
+from user_interaction.services import State, get_obj_from_user
 from user_interaction.user_actions import authenticate_user, register_user, logout, show_grades, get_my_teachers, \
-    rate_students, SubjectClassTeacher, print_school_class_grades, print_grades_for_one_student
+    rate_students_by_teacher, print_school_class_grades, print_grades_of_student, \
+    rate_students_by_administrator
+from working_with_models.models import Class
 
 
 def welcome() -> None:
@@ -35,26 +38,43 @@ def main_menu() -> None:
     action_set[what_to_do_choice.name]()
 
 
-def manage_class() -> None:
+def manage_class_performance() -> None:
     """Пункт меню 'Классное руководство'"""
 
     separate_action()
-    classes_of_teachers = get_objs_from_sct(SubjectClassTeacher.manager.filter(teacher=State.user), 'school_class')
-    if not classes_of_teachers:
-        print_error('Вы не ведете ни одного предмета!')
-    school_class = get_obj_from_user(classes_of_teachers, 'класс')
-    what_to_do_choice = get_choice(ManageClassChoices, manage_user_choices_msg)
-    manage_class_actions[what_to_do_choice](school_class)
+    school_classes = Class.manager.filter(classroom_teacher=State.user)
+    if not school_classes:
+        print_error('У вас нет ни одного класса!')
+    school_class = get_obj_from_user(school_classes, 'класс')
+    what_to_do_choice = get_choice(ManageClassPerformanceChoices, manage_class_performance_choices_msg)
+    manage_class_performance_actions[what_to_do_choice](school_class)
+
+
+def manage_school_performance() -> None:
+    """Пункт меню 'Управление успеваемостью' администратора"""
+
+    what_to_do_choice = get_choice(ManageSchoolPerformanceChoices, manage_school_performance_choices_msg)
+    if what_to_do_choice is ManageSchoolPerformanceChoices.rate_student:
+        rate_students_by_administrator()
+    else:
+        school_classes = Class.manager.all()
+        school_class = get_obj_from_user(school_classes, 'класс')
+        print_grades_of_student(school_class)
 
 
 base_actions = {'exit': logout}
 student_actions = {'show_grades': show_grades, 'get_my_teachers': get_my_teachers}
-teacher_actions = {'rate_students': rate_students, 'manage_class': manage_class}
-manage_class_actions = {ManageClassChoices.print_school_class_grades: print_school_class_grades,
-                        ManageClassChoices.print_grades_for_one_student: print_grades_for_one_student}
+teacher_actions = {'rate_students_by_teacher': rate_students_by_teacher,
+                   'manage_class_performance': manage_class_performance}
+manage_class_performance_actions = {ManageClassPerformanceChoices.print_school_class_grades: print_school_class_grades,
+                                    ManageClassPerformanceChoices.print_grades_of_student: print_grades_of_student}
+manage_school_performance_actions = {ManageSchoolPerformanceChoices.rate_student: rate_students_by_administrator,
+                                     ManageSchoolPerformanceChoices.print_students_grades: print_grades_of_student}
+administrator_actions = {'manage_school_performance': manage_school_performance}
 
 user_actions_and_choices = {
     'Teacher': (base_actions | teacher_actions, teacher_main_menu_choice, teacher_main_menu_choices_msg),
     'Student': (base_actions | student_actions, student_main_menu_choice, student_main_menu_choices_msg),
-    'Administrator': (base_actions, administrator_main_menu_choice, administrator_main_menu_choices_msg)
+    'Administrator': (base_actions | administrator_actions, administrator_main_menu_choice,
+                      administrator_main_menu_choices_msg)
 }

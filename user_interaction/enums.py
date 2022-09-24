@@ -34,12 +34,17 @@ class SaveChanges(enum.Enum, metaclass=ExtendedEnumMeta):
 class WhatToDoWithGrades(enum.Enum, metaclass=ExtendedEnumMeta):
     add = '1'
     remove = '2'
-    nothing = '-2'
+    nothing = '3'
 
 
-class ManageClassChoices(enum.Enum, metaclass=ExtendedEnumMeta):
+class ManageClassPerformanceChoices(enum.Enum, metaclass=ExtendedEnumMeta):
     print_school_class_grades = '1'
-    print_grades_for_one_student = '2'
+    print_grades_of_student = '2'
+
+
+class ManageSchoolPerformanceChoices(enum.Enum, metaclass=ExtendedEnumMeta):
+    rate_student = '1'
+    print_students_grades = '2'
 
 
 class EnumSchoolClassConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
@@ -58,7 +63,7 @@ class EnumSubjectConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
 
 teacher_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'TeacherMainMenuChoice',
-    base_main_menu_choice + [('rate_students', '2'), ('manage_class', '3')]
+    base_main_menu_choice + [('rate_students_by_teacher', '2'), ('manage_class_performance', '3')]
 )
 
 student_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
@@ -68,5 +73,5 @@ student_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
 
 administrator_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
     'AdministratorMainMenuChoice',
-    base_main_menu_choice
+    base_main_menu_choice + [('manage_school_performance', '2')]
 )

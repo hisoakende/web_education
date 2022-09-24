@@ -156,18 +156,16 @@ class Grade(BaseModel):
     """Модель школьной оценки"""
 
     db_table = 'grades'
-    attributes = BaseModel.attributes + ('value', 'student', 'subject', 'teacher', 'date')
-    related_data = {'student': Student, 'subject': Subject, 'teacher': Teacher}
+    attributes = BaseModel.attributes + ('value', 'student', 'subject', 'date')
+    related_data = {'student': Student, 'subject': Subject}
     value = GradeValueValidator()
 
-    def __init__(self, value: int, student: Union[pk_obj, Student],
-                 subject: Union[pk_obj, Subject], teacher: Union[pk_obj, Teacher],
+    def __init__(self, value: int, student: Union[pk_obj, Student], subject: Union[pk_obj, Subject],
                  date: datetime.date = datetime.date.today()) -> None:
         super().__init__()
         self.value = value
         self.student = student
         self.subject = subject
-        self.teacher = teacher
         self.date = date
 
 

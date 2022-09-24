@@ -33,9 +33,9 @@ class TestFillRawTable(unittest.TestCase):
         expected_result = {datetime.date(2000, 1, 1): {english: ['5'], maths: []},
                            datetime.date(2000, 1, 2): {english: [], maths: ['2', '2']}}
         empty_table = get_empty_table_dict(data)
-        grades = [Grade(5, 1, english, 1, datetime.date(2000, 1, 1)),
-                  Grade(2, 1, maths, 1, datetime.date(2000, 1, 2)),
-                  Grade(2, 1, maths, 1, datetime.date(2000, 1, 2))]
+        grades = [Grade(5, 1, english, datetime.date(2000, 1, 1)),
+                  Grade(2, 1, maths, datetime.date(2000, 1, 2)),
+                  Grade(2, 1, maths, datetime.date(2000, 1, 2))]
         fill_raw_table_with_grades(empty_table, grades, 'subject')
         self.assertEqual(expected_result, empty_table)
 
@@ -203,8 +203,8 @@ class TestGetUserAndHisGradesFromCommand(unittest.TestCase):
         student = Student('Ученик', 'Некоторый', 'Некоторович', 'some@email', 'a' * 64, 1)
         State.cache['students'].append(student)
         subject = Subject('Математика')
-        grade1 = Grade(5, student, subject, 1, datetime.date(2022, 1, 1))
-        grade2 = Grade(3, student, subject, 1, datetime.date(2022, 1, 2))
+        grade1 = Grade(5, student, subject, datetime.date(2022, 1, 1))
+        grade2 = Grade(3, student, subject, datetime.date(2022, 1, 2))
         expected_result = (student, [grade1, grade2])
         command = '1:5(1/1/2022),3(2/1/2022)'
         self.assertEqual(str(expected_result), str(get_user_and_his_grades_from_command(command, subject)))
@@ -229,10 +229,10 @@ class TestParseStudentGradingCommand(unittest.TestCase):
         State.cache['students'].append(student1)
         State.cache['students'].append(student2)
         subject = Subject('Математика')
-        grade1_1 = Grade(5, student1, subject, 1, datetime.date(2022, 9, 13))
-        grade1_2 = Grade(3, student1, subject, 1, datetime.date(2022, 9, 12))
-        grade2_1 = Grade(3, student2, subject, 1, datetime.date(2022, 9, 13))
-        grade2_2 = Grade(2, student2, subject, 1, datetime.date(2022, 9, 12))
+        grade1_1 = Grade(5, student1, subject, datetime.date(2022, 9, 13))
+        grade1_2 = Grade(3, student1, subject, datetime.date(2022, 9, 12))
+        grade2_1 = Grade(3, student2, subject, datetime.date(2022, 9, 13))
+        grade2_2 = Grade(2, student2, subject, datetime.date(2022, 9, 12))
         expected_result = [(student1, [grade1_1, grade1_2]), (student2, [grade2_1, grade2_2])]
         command = '1: 5(13/9/2022), 3(12/9/2022); 2: 3(13/9/2022), 2(12/9/2022)'
         self.assertEqual(str(expected_result), str(parse_student_grading_command(command, subject)))

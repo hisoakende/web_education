@@ -80,12 +80,12 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
-    print('[2] - управление успеваемостью')
+    print('[2] - управлять успеваемостью')
     print('[3] - классное руководство')
     choose_exit_msg()
 
 
-def manage_user_choices_msg() -> None:
+def manage_class_performance_choices_msg() -> None:
     separate_action()
     print('Возможные действия:')
     print('[1] - показать успеваемость класса')
@@ -102,6 +102,7 @@ def student_main_menu_choices_msg() -> None:
 
 def administrator_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
+    print('[2] - управлять успеваемостью')
     choose_exit_msg()
 
 
@@ -157,4 +158,13 @@ def what_to_do_with_grades_msg() -> None:
     print('Что делать с оценками?')
     print('[1] - добавить')
     print('[2] - удалить')
-    print('[-2] - ничего')
+    print('[3] - ничего')
+    choose_exit_msg()
+
+
+def manage_school_performance_choices_msg() -> None:
+    separate_action()
+    print('Возможные действия:')
+    print('[1] - управлять успеваемостью')
+    print('[2] - показать успеваемость одного ученика')
+    choose_exit_msg()

@@ -77,21 +77,26 @@ def get_my_teachers() -> None:
 
     pretty_table = get_pretty_table()
     prepare_pretty_table_for_tchs_list(pretty_table)
-    user_class = State.user.school_class
-    teachers_subjects = SubjectClassTeacher.manager.filter(school_class=user_class)
+    student_class = State.user.school_class
+    teachers_subjects = SubjectClassTeacher.manager.filter(school_class=student_class)
     fill_pretty_table_with_tchs(pretty_table, teachers_subjects)
     print(pretty_table)
 
 
-def rate_students() -> None:
+def rate_students_by_teacher() -> None:
     """Позволяет выставить оценки ученикам"""
 
     try:
-        school_class, subject = get_date_to_rate_students()
+        school_class, subject = get_data_to_rate_students(State.user)
     except NoSubjectsTaughtByTheTeacher:
         print_error('Вы не ведете ни одного предмета!')
     else:
         process_student_grading(school_class, subject)
+
+
+def rate_students_by_administrator() -> None:
+    school_class, subject = get_data_to_rate_students()
+    process_student_grading(school_class, subject)
 
 
 def print_school_class_grades(school_class: Class) -> None:
@@ -100,7 +105,7 @@ def print_school_class_grades(school_class: Class) -> None:
     print_class_grades_table(school_class, subject)
 
 
-def print_grades_for_one_student(school_class: Class) -> None:
+def print_grades_of_student(school_class: Class) -> None:
     students = sorted(Student.manager.filter(school_class=school_class), key=lambda x: x.second_name)
     student = get_obj_from_user(students, 'ученика')
     print(f'Успеваемость {student}:')
