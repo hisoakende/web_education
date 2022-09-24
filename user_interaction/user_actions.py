@@ -57,7 +57,7 @@ def logout() -> None:
     State.user = None
 
 
-def show_grades(student: Optional[User]) -> None:
+def show_grades(student: Optional[User] = None) -> None:
     """Показывает все оценки ученика за текущий период (атрибут 'current_dates' класса State)"""
 
     if student is None:

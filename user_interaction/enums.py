@@ -26,9 +26,15 @@ class CreateUser(enum.Enum, metaclass=ExtendedEnumMeta):
     no = '2'
 
 
-class SaveGrades(enum.Enum, metaclass=ExtendedEnumMeta):
+class SaveChanges(enum.Enum, metaclass=ExtendedEnumMeta):
     yes = '1'
     no = '2'
+
+
+class WhatToDoWithGrades(enum.Enum, metaclass=ExtendedEnumMeta):
+    add = '1'
+    remove = '2'
+    nothing = '-2'
 
 
 class ManageClassChoices(enum.Enum, metaclass=ExtendedEnumMeta):

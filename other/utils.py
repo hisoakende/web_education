@@ -39,10 +39,6 @@ class ClassOrInstanceProperty:
         return self.fget(owner)
 
 
-def process_date_for_request(date: datetime.date) -> str:
-    return f'{date.year}/{date.month}/{date.day}'
-
-
 def get_pk_related_entry(value: Union['BaseModel', int]) -> int:
     if type(value) == int:
         return value
@@ -62,18 +58,16 @@ def get_data_to_write_to_db(model: 'BaseModel') -> tuple[list[str], list[Union[i
 def add_data_to_lists(attr: str, value: ModelValuesTypes,
                       arguments: list, columns: list, model: 'BaseModel') -> None:
     """Добавляет данные в списки аргументов и столбцов для создания запроса к БД"""
-    attr, value = process_pair_of_attr_and_value(attr, value, model)
+    attr, value = process_attr_and_value(attr, value, model)
     arguments.append(value)
     columns.append(attr)
 
 
-def process_pair_of_attr_and_value(attr: str, value: ModelValuesTypes,
-                                   model: 'BaseModel') -> tuple[str, Union[int, str]]:
+def process_attr_and_value(attr: str, value: ModelValuesTypes,
+                           model: 'BaseModel') -> tuple[str, Union[int, str]]:
     if attr in model.related_data:
         value = get_pk_related_entry(value)
         attr = attr + '_id'
-    elif isinstance(value, datetime.date):
-        value = process_date_for_request(value)
     return attr, value
 
 
@@ -173,17 +167,17 @@ def get_table_and_column_for_where_part(model: 'BaseModel', condition: str) -> t
     return model.db_table, condition[0]
 
 
-def process_attr_and_value_for_where_part(model: 'BaseModel', attr: str,
-                                          value: ModelValuesTypes) -> tuple[str, Union[int, str]]:
+def process_data_for_where_part(model: 'BaseModel', attr: str,
+                                value: ModelValuesTypes) -> tuple[str, Union[int, str]]:
     if attr == 'pk':
         attr = 'id'
-    return process_pair_of_attr_and_value(attr, value, model)
+    return process_attr_and_value(attr, value, model)
 
 
 def get_table_attr_value_for_where_part(model: 'BaseModel', condition: str,
                                         value: ModelValuesTypes) -> tuple[str, str, Union[int, str]]:
     table, attr = get_table_and_column_for_where_part(model, condition)
-    attr, value = process_attr_and_value_for_where_part(model, attr, value)
+    attr, value = process_data_for_where_part(model, attr, value)
     return table, attr, value
 
 

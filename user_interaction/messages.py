@@ -80,7 +80,7 @@ def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Adm
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
-    print('[2] - посмотреть/поставить оценки')
+    print('[2] - управление успеваемостью')
     print('[3] - классное руководство')
     choose_exit_msg()
 
@@ -126,24 +126,24 @@ def error_msg() -> None:
 
 
 def print_grading_instruction() -> None:
-    print('Оценка ставится в формате: <идентификатор ученика>: оценка\n'
+    print('Оценка добавляется/удаляется в формате: <идентификатор ученика>: оценка\n'
           'Оценки разным ученикам разделяются точкой с запятой \';\'\n'
           'Сразу за оценкой в скобках указывается дата\n'
-          'Несколько оценок одному ученику ставятся через запятую\n'
+          'Чтобы добавить/удалить несколько оценок одного ученика, соответствующие команды нужно писать через запятую\n'
           'Например, 15: 1(1/1/2000), 2(15/1/2000); 32: 3(2/1/2000)\n'
           '\n'
-          'Введите команду для выставления оценок, или [-2] для выхода:')
+          'Введите команды для добавления/удаления оценок, или [-2] для выхода:')
 
 
-def preliminary_grades_msg(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
-    print('\nПоставить следующие оценки?')
+def preliminary_grades_msg(preliminary_grades: list[tuple[Student, list[Grade]]], action: str) -> None:
+    print(f'\nПодтверждаете {action} следующих оценок?')
     for preliminary_grade in sorted(preliminary_grades, key=lambda x: x[0].second_name):
         print(f'{preliminary_grade[0]}: {", ".join(f"{grade.value}({grade.date})" for grade in preliminary_grade[1])}')
 
 
 def save_grades_msg() -> None:
-    print('\n[1] - да, поставить')
-    print('[2] - нет, не ставить')
+    print('\n[1] - да, подтверждаю')
+    print('[2] - нет, не подтверждаю')
     choose_exit_msg()
 
 
@@ -151,3 +151,10 @@ def print_objs_for_the_user_to_select(obj_name: str, objs: list[BaseModel]) -> N
     print(f'Выберете {obj_name}:')
     print('\n'.join(f'[{i}] - {schl_cls}' for i, schl_cls in enumerate(objs, 1)))
     choose_exit_msg()
+
+
+def what_to_do_with_grades_msg() -> None:
+    print('Что делать с оценками?')
+    print('[1] - добавить')
+    print('[2] - удалить')
+    print('[-2] - ничего')

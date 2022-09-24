@@ -1,15 +1,15 @@
 import datetime
 from getpass import getpass
 from string import digits
-from typing import Type, Union, Literal
+from typing import Type, Union, Literal, Callable
 
 from prettytable import PrettyTable
 
-from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError, NoCommand, \
-    NoSubjectsTaughtByTheTeacher
-from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, SaveGrades
+from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError, \
+    NoSubjectsTaughtByTheTeacher, SemanticCommandError, ExitGradingCommand
+from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, SaveChanges, WhatToDoWithGrades
 from user_interaction.messages import print_error, separate_action, print_grading_instruction, preliminary_grades_msg, \
-    save_grades_msg, print_objs_for_the_user_to_select
+    save_grades_msg, print_objs_for_the_user_to_select, what_to_do_with_grades_msg
 from user_interaction.requesting_data_from_user import get_answer, get_choice, request_data
 from working_with_models.models import Teacher, Student, Class, Administrator, Grade, Period, SubjectClassTeacher, \
     Subject, User, BaseModel
@@ -314,14 +314,8 @@ def get_preliminary_grades(subject: Subject) -> Union[None, list[tuple[Student, 
     """Запрашивает команду и возвращает предварительные оценки"""
     student_grading_command = get_answer()
     if student_grading_command == '-2':
-        raise NoCommand
+        raise ExitGradingCommand
     return process_grading_command(student_grading_command, subject)
-
-
-def save_grades_from_grading_command(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
-    for user_and_his_grades in preliminary_grades:
-        for grade in user_and_his_grades[1]:
-            grade.manager.create()
 
 
 def get_date_to_rate_students() -> tuple[Class, Subject]:
@@ -335,21 +329,67 @@ def get_date_to_rate_students() -> tuple[Class, Subject]:
     return school_class, subject
 
 
+def save_grades_from_grading_command(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
+    iterate_over_preliminary_grades(preliminary_grades, lambda gr: gr.manager.create())
+
+
+def iterate_over_preliminary_grades(preliminary_grades: list[tuple[Student, list[Grade]]], func: Callable) -> None:
+    for user_and_his_grades in preliminary_grades:
+        for grade in user_and_his_grades[1]:
+            func(grade)
+
+
+def remove_one_grade_from_grading_command(grade: Grade) -> None:
+    grades = Grade.manager.filter(value=grade.value, student=grade.student, subject=grade.subject,
+                                  teacher=grade.teacher, date=grade.date)
+    if not grades:
+        raise SemanticCommandError
+    grades[0].manager.delete()
+
+
+def remove_grades_from_grading_command(preliminary_grades: list[tuple[Student, list[Grade]]]) -> None:
+    iterate_over_preliminary_grades(preliminary_grades, remove_one_grade_from_grading_command)
+
+
+what_to_do_with_grades_choices = {WhatToDoWithGrades.add: (save_grades_from_grading_command, 'добавление'),
+                                  WhatToDoWithGrades.remove: (remove_grades_from_grading_command, 'удаление')}
+
+
+def get_what_to_do_with_grades_choice() -> WhatToDoWithGrades:
+    what_to_do_with_grades_choice = get_choice(WhatToDoWithGrades, what_to_do_with_grades_msg)
+    if what_to_do_with_grades_choice is WhatToDoWithGrades.nothing:
+        raise ExitGradingCommand
+    return what_to_do_with_grades_choice
+
+
+def get_save_change_choice() -> bool:
+    save_changes_choice = get_choice(SaveChanges, save_grades_msg)
+    if save_changes_choice == SaveChanges.no:
+        return False
+    return True
+
+
 def process_student_grading(school_class: Class, subject: Subject) -> None:
-    State.clear_cache()
-    print_class_grades_table(school_class, subject)
-    print_grading_instruction()
-    try:
-        preliminary_grades = get_preliminary_grades(subject)
-    except NoCommand:
-        return
-    preliminary_grades_msg(preliminary_grades)
-    save_grades_choice = get_choice(SaveGrades, save_grades_msg)
-    if save_grades_choice == SaveGrades.no:
-        return
-    save_grades_from_grading_command(preliminary_grades)
-    State.db.execute_transaction()
-    process_student_grading(school_class, subject)
+    while True:
+        State.clear_cache()
+        print_class_grades_table(school_class, subject)
+        while True:
+            try:
+                what_to_do_with_grades_choice = get_what_to_do_with_grades_choice()
+                print_grading_instruction()
+                preliminary_grades = get_preliminary_grades(subject)
+            except ExitGradingCommand:
+                return
+            try:
+                what_to_do_with_grades_choices[what_to_do_with_grades_choice][0](preliminary_grades)
+            except SemanticCommandError:
+                print_error('Неверный смысл команды!\n')
+                continue
+            preliminary_grades_msg(preliminary_grades, what_to_do_with_grades_choices[what_to_do_with_grades_choice][1])
+            if not get_save_change_choice():
+                continue
+            State.db.execute_transaction()
+            break
 
 
 def get_objs_from_sct(raw_objs: list[SubjectClassTeacher], model: str) -> list[Union[Subject, Class, Teacher]]:

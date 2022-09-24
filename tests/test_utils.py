@@ -16,13 +16,6 @@ class TestSingleton(unittest.TestCase):
         self.assertRaises(ManyInstanceOfClassError, Singleton)
 
 
-class TestProcessDateForRequest(unittest.TestCase):
-
-    def test_function_result(self):
-        result = process_date_for_request(datetime.date(year=2004, month=8, day=31))
-        self.assertEqual('2004/8/31', result)
-
-
 class TestGetPkRelatedEntry(unittest.TestCase):
 
     def test_int_value(self):
@@ -63,12 +56,6 @@ class TestGetDataForCreateSavingRequest(unittest.TestCase):
         self.some_model.some_attr = self.some_model_class()
         self.some_model.some_attr.pk = 2
         expected_result = [get_pk_related_entry(self.some_model.some_attr)]
-        self.assertEqual(expected_result, get_data_to_write_to_db(self.some_model)[1])
-
-    def test_value_is_date(self):
-        some_attr = datetime.date(year=2004, month=8, day=31)
-        self.some_model.some_attr = some_attr
-        expected_result = [process_date_for_request(some_attr)]
         self.assertEqual(expected_result, get_data_to_write_to_db(self.some_model)[1])
 
 
@@ -226,7 +213,7 @@ class TestGetTableAndColumnForWherePart(unittest.TestCase):
 class ProcessAttrAndValueForWherePart(unittest.TestCase):
 
     def test_for_pk_is_id(self):
-        result = process_attr_and_value_for_where_part(get_some_model(), 'pk', 123)[0]
+        result = process_data_for_where_part(get_some_model(), 'pk', 123)[0]
         self.assertEqual('id', result)
 
 
@@ -236,7 +223,7 @@ class TestGetDataForWherePartOfSql(unittest.TestCase):
         s = 'WHERE {}.{} = %s AND {}.{} = %s'
         identifiers = [Identifier('main_table'), Identifier('id'),
                        Identifier('related_table'), Identifier('some_attr')]
-        arguments = [1, '2004/8/31']
+        arguments = [1, datetime.date(2004, 8, 31)]
         expected_result = (s, identifiers, arguments)
         model = get_some_model()
         result = get_data_for_where_part_of_sql(model, pk=1, related_model__some_attr=datetime.date(2004, 8, 31))
