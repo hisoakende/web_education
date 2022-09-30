@@ -9,11 +9,12 @@ class BaseValidator:
 
     def __set_name__(self, owner: 'BaseModel', name: str) -> None:
         self.name = name
+        self.name_ru = owner.attributes_ru[owner.attributes.index(name) - 1]
 
     def check_for_characters(self, value: str, characters: Iterable) -> None:
         value = set(value.lower())
         if not value.issubset(characters):
-            raise ValidationError(f'Поле {self.name} содержит недопустимые символы')
+            raise ValidationError(f'Поле \'{self.name_ru}\' содержит недопустимые символы')
 
     @staticmethod
     def check_for_string(value: str) -> None:
@@ -22,7 +23,7 @@ class BaseValidator:
 
     def check_for_range(self, value: int, min_length: int, max_length: int) -> None:
         if value not in range(min_length, max_length + 1):
-            raise ValidationError(f'Неккореткное значение {self.name}. '
+            raise ValidationError(f'Неккореткное значение поля \'{self.name_ru}\'. '
                                   f'Допустимый диапозон - [{min_length};{max_length}]')
 
     def __set__(self, instance: 'BaseModel', value: Any) -> None:

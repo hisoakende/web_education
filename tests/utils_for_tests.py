@@ -64,3 +64,7 @@ def get_some_students() -> list[Student]:
         student.pk = x
         raw_students.append(student)
     return raw_students
+
+
+def hash_func_for_model(self: BaseModel) -> int:
+    return hash(self.db_table)

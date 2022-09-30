@@ -3,6 +3,7 @@ from functools import wraps
 from typing import Callable, Union, Any, Type, Optional
 
 from user_interaction.enums import WhatToDoWithLogin
+from user_interaction.messages import choose_exit_msg
 
 input_sign = '\33[32m---> \033[0m'
 invalid_input = 'Неккоректный ввод!'
@@ -53,6 +54,7 @@ def print_message(msg: Union[Callable, str, None] = None) -> None:
 
 def get_choice(choices: Type[enum.Enum], msg: Union[Callable, str, None] = None) -> Optional[enum.Enum]:
     print_message(msg)
+    choose_exit_msg()
     return _get_choice(choices)
 
 

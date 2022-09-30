@@ -21,11 +21,6 @@ class ProfileType(enum.Enum, metaclass=ExtendedEnumMeta):
     administrator = '3'
 
 
-class CreateUser(enum.Enum, metaclass=ExtendedEnumMeta):
-    yes = '1'
-    no = '2'
-
-
 class SaveChanges(enum.Enum, metaclass=ExtendedEnumMeta):
     yes = '1'
     no = '2'
@@ -47,31 +42,29 @@ class ManageSchoolPerformanceChoices(enum.Enum, metaclass=ExtendedEnumMeta):
     print_students_grades = '2'
 
 
-class EnumSchoolClassConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
+class WhatToDoWithObj(enum.Enum, metaclass=ExtendedEnumMeta):
+    add = '1'
+    remove = '2'
+    change = '3'
+
+
+class EnumConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
 
     def __str__(self) -> str:
         return self.name
 
 
-class EnumBaseMainMenuChoiceConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
-    pass
-
-
-class EnumSubjectConstructor(enum.Enum, metaclass=ExtendedEnumMeta):
-    pass
-
-
-teacher_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
+teacher_main_menu_choice = EnumConstructor(
     'TeacherMainMenuChoice',
     base_main_menu_choice + [('rate_students_by_teacher', '2'), ('manage_class_performance', '3')]
 )
 
-student_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
+student_main_menu_choice = EnumConstructor(
     'StudentMainMenuChoice',
     base_main_menu_choice + [('show_grades', '2'), ('get_my_teachers', '3')]
 )
 
-administrator_main_menu_choice = EnumBaseMainMenuChoiceConstructor(
+administrator_main_menu_choice = EnumConstructor(
     'AdministratorMainMenuChoice',
-    base_main_menu_choice + [('manage_school_performance', '2')]
+    base_main_menu_choice + [('manage_school_performance', '2'), ('change_object', '3')]
 )

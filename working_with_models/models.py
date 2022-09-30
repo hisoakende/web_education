@@ -44,7 +44,8 @@ class BaseModel(ABC):
 class User:
     """Базовое представление пользователя"""
 
-    attributes = ('first_name', 'second_name', 'patronymic', 'email', 'password')
+    attributes = BaseModel.attributes + ('first_name', 'second_name', 'patronymic', 'email', 'password')
+    attributes_ru = ('имя', 'фамилия', 'отчество', 'email', 'пароль')
 
     first_name = PersonalDataValidator()
     second_name = PersonalDataValidator()
@@ -61,6 +62,9 @@ class User:
         self.email = email
         self.password = password
 
+    def __str__(self):
+        return f'{self.second_name} {self.first_name[0]}. {self.patronymic[0]}.'
+
 
 class Teacher(User, BaseModel):
     """
@@ -69,7 +73,8 @@ class Teacher(User, BaseModel):
     """
 
     db_table = 'teachers'
-    attributes = BaseModel.attributes + User.attributes + ('about_person',)
+    attributes = User.attributes + ('about_person',)
+    attributes_ru = User.attributes_ru + ('об учителе',)
     name_ru = 'Учитель'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
@@ -86,7 +91,10 @@ class Class(BaseModel):
 
     db_table = 'classes'
     attributes = BaseModel.attributes + ('number', 'letter', 'classroom_teacher')
+    attributes_ru = ('номер', 'буква', 'классный руковдитель')
     related_data = {'classroom_teacher': Teacher}
+    name_ru = 'Класс'
+
     number = ClassNumberValidator()
     letter = ClassLetterValidator()
 
@@ -104,7 +112,8 @@ class Student(User, BaseModel):
     """Модель ученика. Ученик может просматривать учителей, которые ведут у него занятия, а также свои оценки"""
 
     db_table = 'students'
-    attributes = BaseModel.attributes + User.attributes + ('school_class',)
+    attributes = User.attributes + ('school_class',)
+    attributes_ru = User.attributes_ru + ('класс',)
     related_data = {'school_class': Class}
     name_ru = 'Ученик'
 
@@ -113,10 +122,7 @@ class Student(User, BaseModel):
         super().__init__(first_name, second_name, patronymic, email, password)
         self.school_class = school_class
 
-    def __str__(self):
-        return f'{self.second_name} {self.first_name[0]}. {self.patronymic[0]}.'
-
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.email)
 
 
@@ -127,7 +133,7 @@ class Administrator(User, BaseModel):
     """
 
     db_table = 'administrators'
-    attributes = BaseModel.attributes + User.attributes
+    attributes = User.attributes
     name_ru = 'Администратор'
 
 
@@ -139,6 +145,9 @@ class Subject(BaseModel):
 
     db_table = 'subjects'
     attributes = BaseModel.attributes + ('name',)
+    attributes_ru = ('название',)
+    name_ru = 'Предмет'
+
     name = SubjectNameValidator()
 
     def __init__(self, name: str) -> None:
@@ -157,7 +166,10 @@ class Grade(BaseModel):
 
     db_table = 'grades'
     attributes = BaseModel.attributes + ('value', 'student', 'subject', 'date')
+    attributes_ru = ('значение', 'ученик', 'предмет', 'дата')
     related_data = {'student': Student, 'subject': Subject}
+    name_ru = 'Оценка'
+
     value = GradeValueValidator()
 
     def __init__(self, value: int, student: Union[pk_obj, Student], subject: Union[pk_obj, Subject],
@@ -174,8 +186,10 @@ class Period(BaseModel):
 
     db_table = 'periods'
     attributes = BaseModel.attributes + ('start', 'finish', 'is_current')
+    attributes_ru = ('начальная дата', 'конечная дата', 'текущий ли период')
+    name_ru = 'Период успеваемости'
 
-    def __init__(self, start: datetime.date, finish: datetime.date, is_current: bool) -> None:
+    def __init__(self, start: datetime.date, finish: datetime.date, is_current: bool = False) -> None:
         super().__init__()
         self.start = start
         self.finish = finish
@@ -183,11 +197,13 @@ class Period(BaseModel):
 
 
 class SubjectClassTeacher(BaseModel):
-    """Комбинация учителя, предмета, который он преподает, и класса, у которого он ведет этот предмет"""
+    """Связка учителя, предмета, который он преподает, и класса, у которого он ведет этот предмет"""
 
     db_table = 'subject_class_teacher'
     attributes = BaseModel.attributes + ('subject', 'school_class', 'teacher')
+    attributes_ru = ('предмет', 'класс', 'учитель')
     related_data = {'subject': Subject, 'school_class': Class, 'teacher': Teacher}
+    name_ru = 'Связка предмет-класс-учитель'
 
     def __init__(self, subject: Union[pk_obj, Subject],
                  school_class: Union[pk_obj, Class], teacher: Union[pk_obj, Teacher]) -> None:

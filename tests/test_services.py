@@ -1,6 +1,6 @@
 import unittest
 
-from tests.utils_for_tests import get_some_students
+from tests.utils_for_tests import get_some_students, hash_func_for_model
 from user_interaction.services import *
 from working_with_models.models import Subject, Grade, Student
 
@@ -95,8 +95,8 @@ class TestGetStudentFromGradingCommand(unittest.TestCase):
 
     def test_incorrect_student_number(self):
         State.clear_cache()
-        self.assertRaises(InvalidGradingCommand, get_student_from_grading_command, 0)
-        self.assertRaises(InvalidGradingCommand, get_student_from_grading_command, 1)
+        self.assertRaises(InvalidData, get_student_from_grading_command, 0)
+        self.assertRaises(InvalidData, get_student_from_grading_command, 1)
 
     def test_correct_student_number(self):
         some_student = Student('Владимир', 'Владимиров', 'Владимирович', 'some_email@email.com', 'a' * 64, 1)
@@ -107,7 +107,7 @@ class TestGetStudentFromGradingCommand(unittest.TestCase):
 class TestValidateCommandChars(unittest.TestCase):
 
     def test_incorrect_command_chars(self):
-        self.assertRaises(InvalidGradingCommand, validate_command_chars, '5: 5(1!1!2022)')
+        self.assertRaises(InvalidData, validate_command_chars, '5: 5(1!1!2022)')
 
     def test_correct_command_chars(self):
         self.assertIsNone(validate_command_chars('32: 5(10/10/2022), 3(5/9/2022); 20: 5(10/10/2022)'))
@@ -116,7 +116,7 @@ class TestValidateCommandChars(unittest.TestCase):
 class TestValidateCommandParts(unittest.TestCase):
 
     def test_incorrect_command_parts(self):
-        self.assertRaises(InvalidGradingCommand, validate_command_parts, ['1234', '1234', ''])
+        self.assertRaises(InvalidData, validate_command_parts, ['1234', '1234', ''])
 
     def test_correct_command_parts(self):
         self.assertIsNone(validate_command_parts(['1234', '1234', '1234']))
@@ -125,7 +125,7 @@ class TestValidateCommandParts(unittest.TestCase):
 class TestValidateCommandForm(unittest.TestCase):
 
     def test_incorrect_command_form(self):
-        self.assertRaises(InvalidGradingCommand, validate_command_form, '5: 4(10/12/2022')
+        self.assertRaises(InvalidData, validate_command_form, '5: 4(10/12/2022')
 
     def test_correct_command_form(self):
         self.assertIsNone(validate_command_form('10: 2(10/10/2022)'))
@@ -134,7 +134,7 @@ class TestValidateCommandForm(unittest.TestCase):
 class TestValidateGradeAndDate(unittest.TestCase):
 
     def test_incorrect_grade_and_date(self):
-        self.assertRaises(InvalidGradingCommand, validate_grade_and_date, ['5', '20', '20'])
+        self.assertRaises(InvalidData, validate_grade_and_date, ['5', '20', '20'])
 
     def test_correct_grade_and_date(self):
         self.assertIsNone(validate_grade_and_date(['5', '1', '1', '2022']))
@@ -143,7 +143,7 @@ class TestValidateGradeAndDate(unittest.TestCase):
 class TestValidateLocationOfSpecialCharsInDate(unittest.TestCase):
 
     def test_incorrect_location(self):
-        self.assertRaises(InvalidGradingCommand, check_location_of_special_chars_in_date, '5/10)10/(')
+        self.assertRaises(InvalidDate, check_location_of_special_chars_in_date, '5/10)10/(')
 
     def test_correct_location(self):
         self.assertIsNone(check_location_of_special_chars_in_date('5(10/10/2022)'))
@@ -152,7 +152,7 @@ class TestValidateLocationOfSpecialCharsInDate(unittest.TestCase):
 class TestCheckNumberOfSpecialCharsInDate(unittest.TestCase):
 
     def test_incorrect_number(self):
-        self.assertRaises(InvalidGradingCommand, check_number_of_special_chars_in_date, '5((/10/10/2022))')
+        self.assertRaises(InvalidDate, check_number_of_special_chars_in_date, '5((/10/10/2022))')
 
     def test_correct_number(self):
         self.assertIsNone(check_number_of_special_chars_in_date('5(10/10/2022)'))
@@ -162,7 +162,7 @@ class TestCheckDateInCurrentPeriod(unittest.TestCase):
 
     def test_date_not_in_current_dates(self):
         State.current_dates = [datetime.date(2022, 9, 1), datetime.date(2022, 9, 2)]
-        self.assertRaises(InvalidGradingCommand, check_date_in_current_period, datetime.date(2022, 9, 3))
+        self.assertRaises(InvalidDate, check_date_in_current_period, datetime.date(2022, 9, 3))
 
     def test_date_in_current_dates(self):
         State.current_dates = State.current_dates = [datetime.date(2022, 9, 1), datetime.date(2022, 9, 2)]
@@ -188,7 +188,7 @@ class TestProcessPartOfOneStudentCommand(unittest.TestCase):
 class TestCreateDateFromCommandValues(unittest.TestCase):
 
     def test_incorrect_command_values(self):
-        self.assertRaises(InvalidGradingCommand, create_date_from_command_values, [2022, 10, 32])
+        self.assertRaises(InvalidDate, create_date_from_command_values, [2022, 10, 32])
 
     def test_correct_command_values(self):
         expected_result = datetime.date(2022, 12, 31)
@@ -237,3 +237,44 @@ class TestParseStudentGradingCommand(unittest.TestCase):
         command = '1: 5(13/9/2022), 3(12/9/2022); 2: 3(13/9/2022), 2(12/9/2022)'
         self.assertEqual(str(expected_result), str(parse_student_grading_command(command, subject)))
         State.clear_cache()
+
+
+class TestRelatedModelStrRuToChoice(unittest.TestCase):
+
+    def test_attr_is_teacher(self):
+        result = get_related_model_str_ru_to_choice('teacher')
+        expected_result = 'учителя'
+        self.assertEqual(expected_result, result)
+
+    def test_attr_is_classroom_teacher(self):
+        result = get_related_model_str_ru_to_choice('classroom_teacher')
+        expected_result = 'классного руководителя'
+        self.assertEqual(expected_result, result)
+
+
+class TestProcessValueFromAdminToChangeObj(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.some_model_class = type('SomeClass', (BaseModel,), {'db_table': 'some_table'})
+        cls.some_model_class.__hash__ = hash_func_for_model
+
+    def test_value_is_not_str(self):
+        some_instance = self.some_model_class()
+        result = process_value_from_admin_to_change_obj(some_instance, 'some_attr', self.some_model_class)
+        expected_result = some_instance
+        self.assertEqual(expected_result, result)
+
+    def test_value_is_digit_and_attr_is_number(self):
+        result = process_value_from_admin_to_change_obj('1234', 'number', self.some_model_class)
+        expected_result = 1234
+        self.assertEqual(expected_result, result)
+
+    def test_value_is_incorrect_date(self):
+        self.assertRaises(InvalidDate, process_value_from_admin_to_change_obj,
+                          'ffd2v2v', 'start', Period)
+
+    def test_value_is_correct_date(self):
+        result = process_value_from_admin_to_change_obj('(31/8/2004)', 'start', Period)
+        expected_result = datetime.date(2004, 8, 31)
+        self.assertEqual(expected_result, result)

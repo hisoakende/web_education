@@ -1,6 +1,6 @@
-from typing import Type, Union
+from typing import Iterable
 
-from working_with_models.models import Teacher, Student, Class, Administrator, Grade, BaseModel
+from working_with_models.models import Student, Grade
 
 
 def separate_action() -> None:
@@ -28,7 +28,6 @@ def welcome_msg() -> None:
 def choice_about_login_msg() -> None:
     print('[1] - войти в аккаунт')
     print('[2] - зарегистироваться')
-    choose_exit_msg()
 
 
 def profile_type_msg() -> None:
@@ -36,7 +35,6 @@ def profile_type_msg() -> None:
     print('[1] - ученик')
     print('[2] - учитель')
     print('[3] - администратор')
-    choose_exit_msg()
 
 
 def authenticate_user_msg() -> None:
@@ -59,30 +57,32 @@ def print_full_name(first_name: str, second_name: str, patronymic: str) -> None:
     print(f'Отчество: {patronymic}')
 
 
-def whether_to_save_account_msg() -> None:
-    print('\nСохранить профиль с такими данными?')
-    print('[1] - сохранить')
-    print('[2] - не сохранять, повторить регистрацию')
+def save_account_msg() -> None:
+    print('\nСохранить аккаунт?')
+    yes_or_no_msg()
 
 
-def create_user_with_this_data_msg(model_class: Type[Union[Teacher, Student, Administrator]], first_name: str,
-                                   second_name: str, patronymic: str,
-                                   email: str, additional_field: Union[None, Class, str] = None) -> None:
-    print_full_name(first_name, second_name, patronymic)
-    print(f'Email: {email}')
-    if model_class is Teacher:
-        print(f'Информация об учителе: {additional_field}')
-    elif model_class is Student:
-        print(f'Класс: {str(additional_field.number) + additional_field.letter}')
-    whether_to_save_account_msg()
-    choose_exit_msg()
+def save_obj_msg() -> None:
+    print('\nСохранить объект?')
+    yes_or_no_msg()
+
+
+def yes_or_no_msg() -> None:
+    print('[1] - да')
+    print('[2] - нет')
+
+
+def create_obj_with_this_data_msg(obj):
+    for attr_index in range(len(obj.attributes) - 1):
+        if obj.attributes[attr_index + 1] not in ('password', 'is_current'):
+            print(f'{obj.attributes_ru[attr_index].lower().capitalize()}: '
+                  f'{getattr(obj, obj.attributes[attr_index + 1])}')
 
 
 def teacher_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
     print('[2] - управлять успеваемостью')
     print('[3] - классное руководство')
-    choose_exit_msg()
 
 
 def manage_class_performance_choices_msg() -> None:
@@ -90,20 +90,18 @@ def manage_class_performance_choices_msg() -> None:
     print('Возможные действия:')
     print('[1] - показать успеваемость класса')
     print('[2] - показать успеваемость одного ученика')
-    choose_exit_msg()
 
 
 def student_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
     print('[2] - посмотреть оценки')
     print('[3] - показать моих учителей')
-    choose_exit_msg()
 
 
 def administrator_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
     print('[2] - управлять успеваемостью')
-    choose_exit_msg()
+    print('[3] - управлять объектами')
 
 
 def base_main_menu_choices_msg() -> None:
@@ -137,29 +135,22 @@ def print_grading_instruction() -> None:
 
 
 def preliminary_grades_msg(preliminary_grades: list[tuple[Student, list[Grade]]], action: str) -> None:
-    print(f'\nПодтверждаете {action} следующих оценок?')
+    print(f'Подтверждаете {action} следующих оценок?')
     for preliminary_grade in sorted(preliminary_grades, key=lambda x: x[0].second_name):
         print(f'{preliminary_grade[0]}: {", ".join(f"{grade.value}({grade.date})" for grade in preliminary_grade[1])}')
+    yes_or_no_msg()
 
 
-def save_grades_msg() -> None:
-    print('\n[1] - да, подтверждаю')
-    print('[2] - нет, не подтверждаю')
-    choose_exit_msg()
-
-
-def print_objs_for_the_user_to_select(obj_name: str, objs: list[BaseModel]) -> None:
+def print_objs_for_the_user_to_select(obj_name: str, objs: Iterable) -> None:
     print(f'Выберете {obj_name}:')
     print('\n'.join(f'[{i}] - {schl_cls}' for i, schl_cls in enumerate(objs, 1)))
-    choose_exit_msg()
 
 
 def what_to_do_with_grades_msg() -> None:
-    print('Что делать с оценками?')
+    print('Действия с оценками:')
     print('[1] - добавить')
     print('[2] - удалить')
     print('[3] - ничего')
-    choose_exit_msg()
 
 
 def manage_school_performance_choices_msg() -> None:
@@ -167,4 +158,10 @@ def manage_school_performance_choices_msg() -> None:
     print('Возможные действия:')
     print('[1] - управлять успеваемостью')
     print('[2] - показать успеваемость одного ученика')
-    choose_exit_msg()
+
+
+def what_to_do_with_obj_msg() -> None:
+    print('Действия с объектом:')
+    print('[1] - добавить')
+    print('[2] - удалить')
+    print('[3] - изменить')

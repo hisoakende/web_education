@@ -10,6 +10,7 @@ class TestBaseValidator(unittest.TestCase):
     def setUpClass(cls):
         cls.validator = BaseValidator()
         cls.validator.name = 'attr'
+        cls.validator.name_ru = 'поле'
 
     def test_check_for_characters(self):
         func = self.validator.check_for_characters
@@ -66,6 +67,7 @@ class TestPasswordValidator(unittest.TestCase):
     def setUpClass(cls):
         cls.validator = PasswordValidator()
         cls.validator.name = 'attr'
+        cls.validator.name_ru = 'пароль'
 
     def test_check_for_certain_characters(self):
         self.assertRaises(ValidationError, self.validator.check_for_certain_characters, 'some_password', '0123456789')

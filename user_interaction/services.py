@@ -3,13 +3,15 @@ from getpass import getpass
 from string import digits
 from typing import Type, Union, Literal, Callable, Optional
 
+import psycopg2.errors
 from prettytable import PrettyTable
 
-from other.exceptions import InstanceCantExist, InvalidGradingCommand, ValidationError, \
-    NoSubjectsTaughtByTheTeacher, SemanticCommandError, ExitGradingCommand
-from user_interaction.enums import CreateUser, EnumSchoolClassConstructor, ProfileType, SaveChanges, WhatToDoWithGrades
+from other.exceptions import InstanceCantExist, InvalidData, ValidationError, \
+    NoSubjectsTaughtByTheTeacher, SemanticCommandError, ExitGradingCommand, InvalidDate
+from other.utils import ModelValuesTypes
+from user_interaction.enums import EnumConstructor, ProfileType, SaveChanges, WhatToDoWithGrades
 from user_interaction.messages import print_error, separate_action, print_grading_instruction, preliminary_grades_msg, \
-    save_grades_msg, print_objs_for_the_user_to_select, what_to_do_with_grades_msg
+    print_objs_for_the_user_to_select, what_to_do_with_grades_msg
 from user_interaction.requesting_data_from_user import get_answer, get_choice, request_data
 from working_with_models.models import Teacher, Student, Class, Administrator, Grade, Period, SubjectClassTeacher, \
     Subject, User, BaseModel
@@ -45,18 +47,17 @@ class State:
         cls.cache = {'students': [None]}
 
 
-def try_to_create_user(model_class: Type[UserTypes], first_name: str, second_name: str,
-                       patronymic: str, email: str, password: str, *additional_field: str) -> UserTypes:
+def try_to_create_obj(model_class: Type[BaseModel], *args: ModelValuesTypes) -> Optional[BaseModel]:
     try:
-        user = model_class(first_name, second_name, patronymic, email, password, *additional_field)
+        user = model_class(*args)
     except ValidationError as exception:
         print_error(f'{exception}')
     else:
         return user
 
 
-def get_obj_from_user(objs: list[BaseModel], obj_name_str: str) -> BaseModel:
-    objs_enum = EnumSchoolClassConstructor('ObjsEnum', [(str(c), str(i)) for i, c in enumerate(objs, 1)])
+def get_obj_from_user(objs: list, obj_name_str: str) -> BaseModel:
+    objs_enum = EnumConstructor('ObjsEnum', [(repr(c), str(i)) for i, c in enumerate(objs, 1)])
     print_objs_for_the_user_to_select(obj_name_str, objs)
     obj_number = get_choice(objs_enum).value
     return objs[int(obj_number) - 1]
@@ -70,11 +71,11 @@ def get_additional_field(model_class: Type[User]) -> Union[None, str, Class]:
         return get_obj_from_user(classes, 'класс')
 
 
-def try_to_insert_user_to_db(user: User) -> bool:
-    create_user = get_choice(CreateUser)
-    if create_user == CreateUser.no:
+def try_to_insert_obj_to_db(obj: BaseModel) -> bool:
+    create_obj_choice = get_choice(SaveChanges)
+    if create_obj_choice is SaveChanges.no:
         return False
-    user.manager.create(execution=True)
+    obj.manager.create(execution=True)
     return True
 
 
@@ -203,45 +204,45 @@ def print_class_grades_table(school_class: Class, subject: Subject) -> None:
 def validate_command_chars(command: str) -> None:
     for character in command:
         if character not in ':(/),; ' + digits:
-            raise InvalidGradingCommand('Содержатся недопустимые символы')
+            raise InvalidData('Содержатся недопустимые символы')
 
 
 def validate_command_parts(command: list[str]) -> None:
     if not all(command):
-        raise InvalidGradingCommand('Недопустимая форма')
+        raise InvalidData('Недопустимая форма')
 
 
 def validate_command_form(cmd: str) -> None:
     if cmd.count(':') + cmd.count('(') + cmd.count('/') + cmd.count(')') < 5:
-        raise InvalidGradingCommand('Недопустимая форма')
+        raise InvalidData('Недопустимая форма')
 
 
 def get_student_from_grading_command(user_number: int) -> Student:
     """Возвращает ученика, которому ставится оценка"""
     if len(State.cache['students']) > user_number > 0:
         return State.cache['students'][user_number]
-    raise InvalidGradingCommand('Неверный номер студента')
+    raise InvalidData('Неверный номер студента')
 
 
 def validate_grade_and_date(grade_and_date: list[str]) -> None:
     if len(grade_and_date) != 4:
-        raise InvalidGradingCommand('Недопустимый формат оценки или даты')
+        raise InvalidData('Недопустимый формат оценки или даты')
 
 
 def check_location_of_special_chars_in_date(date: str) -> None:
     if date.index(')') > date.index('/') > date.index('('):
         return
-    raise InvalidGradingCommand('Недопустимый формат даты')
+    raise InvalidDate('Недопустимый формат даты')
 
 
 def check_number_of_special_chars_in_date(date: str) -> None:
     if date.count('/') != 2 or date.count('(') != 1 or date.count(')') != 1:
-        raise InvalidGradingCommand('Недопустимый формат даты')
+        raise InvalidDate('Недопустимый формат даты')
 
 
 def check_date_in_current_period(date: datetime.date) -> None:
     if date not in State.current_dates:
-        raise InvalidGradingCommand('Недопустимая дата')
+        raise InvalidDate('Недопустимая дата')
 
 
 def split_grade_and_date(grade_and_date: str) -> tuple[int, list[int]]:
@@ -267,7 +268,7 @@ def create_date_from_command_values(date: list[int]) -> datetime.date:
     try:
         return datetime.date(*date)
     except ValueError:
-        raise InvalidGradingCommand('Недопустимый формат даты')
+        raise InvalidDate
 
 
 def create_grade_from_grading_command(grade_and_date: str, student: Student, subject: Subject) -> Grade:
@@ -293,6 +294,7 @@ def grading_command_preprocessing(command: str) -> list[str]:
 
 
 def parse_student_grading_command(command: str, subject: Subject) -> list[tuple[Student, list[Grade]]]:
+    """Функция, обрабатывающая команду выставления оценки"""
     parts_by_users = grading_command_preprocessing(command)
     parsed_data = [get_user_and_his_grades_from_command(part, subject) for part in parts_by_users]
     return parsed_data
@@ -301,7 +303,7 @@ def parse_student_grading_command(command: str, subject: Subject) -> list[tuple[
 def process_grading_command(command: str, subject: Subject) -> Union[None, list[tuple[Student, list[Grade]]]]:
     try:
         st_and_gr = parse_student_grading_command(command, subject)
-    except (InvalidGradingCommand, ValidationError) as e:
+    except (InvalidData, InvalidDate, ValidationError) as e:
         if isinstance(e, ValidationError):
             e = 'Недопустимое значение оценки'
         print_error(f'Неккоректная команда! {e}')
@@ -311,7 +313,7 @@ def process_grading_command(command: str, subject: Subject) -> Union[None, list[
 
 @request_data(None)
 def get_preliminary_grades(subject: Subject) -> Union[None, list[tuple[Student, list[Grade]]]]:
-    """Запрашивает команду и возвращает предварительные оценки"""
+    """Запрашивает команду выставления оценок и возвращает предварительные оценки"""
     student_grading_command = get_answer()
     if student_grading_command == '-2':
         raise ExitGradingCommand
@@ -376,7 +378,7 @@ def get_what_to_do_with_grades_choice() -> WhatToDoWithGrades:
 
 
 def get_save_change_choice() -> bool:
-    save_changes_choice = get_choice(SaveChanges, save_grades_msg)
+    save_changes_choice = get_choice(SaveChanges)
     if save_changes_choice == SaveChanges.no:
         return False
     return True
@@ -409,3 +411,69 @@ def process_student_grading(school_class: Class, subject: Subject) -> None:
 def get_objs_from_sct(raw_objs: list[SubjectClassTeacher], model: str) -> list[Union[Subject, Class, Teacher]]:
     """Возвращает конкректные объекты ('Subject', 'Class', 'Teacher'). sct - subject_class_teacher"""
     return [getattr(obj, model) for obj in raw_objs]
+
+
+def get_related_model_str_ru_to_choice(attr: str) -> Optional[str]:
+    if attr == 'teacher':
+        return 'учителя'
+    elif attr == 'classroom_teacher':
+        return 'классного руководителя'
+
+
+def process_value_from_admin_to_change_obj(value: Union[str, BaseModel], attr: str,
+                                           model_class: Type[BaseModel]) -> Union[BaseModel, int, datetime.date, str]:
+    if not isinstance(value, str):
+        return value
+    elif value.isdigit() and attr == 'number':
+        return int(value)
+    elif attr in ('start', 'finish') and model_class is Period:
+        check_number_of_special_chars_in_date(value)
+        check_location_of_special_chars_in_date(value)
+        date = list(map(int, value.replace('(', ' ').replace('/', ' ').replace(')', ' ').split()[::-1]))
+        return create_date_from_command_values(date)
+    return value
+
+
+def request_value_to_create_object_by_admin(model_class: Type[BaseModel], attr_en: str,
+                                            attr_ru: str) -> Union[BaseModel, str, None]:
+    if attr_en in model_class.related_data:
+        related_objs = model_class.related_data[attr_en].manager.all()
+        related_model_str_ru = get_related_model_str_ru_to_choice(attr_en) or attr_ru
+        return get_obj_from_user(related_objs, related_model_str_ru)
+    if attr_en == 'password':
+        return get_answer(f'Введите поле \'{attr_ru}\':', getpass)
+    if attr_en == 'is_current':
+        return
+    return get_answer(f'Введите поле \'{attr_ru}\':')
+
+
+def try_to_add_value_to_list_to_create_obj_by_admin(data: list[Union[BaseModel, int, datetime.date, str]],
+                                                    value: Union[str, BaseModel],
+                                                    attr_en: str,
+                                                    model_class: Type[BaseModel]) -> None:
+    try:
+        data.append(process_value_from_admin_to_change_obj(value, attr_en, model_class))
+    except InvalidDate as e:
+        raise InvalidData(str(e))
+
+
+def get_values_to_create_obj_by_admin(model_class: Type[BaseModel]) -> list[Union[BaseModel, int, datetime.date, str]]:
+    data = []
+    for attr_index in range(len(model_class.attributes) - 1):
+        attr_en = model_class.attributes[attr_index + 1]
+        attr_ru = model_class.attributes_ru[attr_index]
+        value = request_value_to_create_object_by_admin(model_class, attr_en, attr_ru)
+        if value is None:
+            continue
+        try_to_add_value_to_list_to_create_obj_by_admin(data, value, attr_en, model_class)
+    return data
+
+
+def finish_registration(user: User) -> Optional[User]:
+    try:
+        is_created_user = try_to_insert_obj_to_db(user)
+    except psycopg2.errors.UniqueViolation:
+        print_error('Аккаунт такого типа с данным email уже существует')
+        return
+    if is_created_user:
+        return user

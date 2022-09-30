@@ -19,8 +19,12 @@ class DontExistUnexecutedRequests(Exception):
         return 'Отстувуют запросы для обработки'
 
 
-class InvalidGradingCommand(Exception):
-    """Исключение, возникающие при неправильной команде выставления/удаления оценок"""
+class InvalidData(Exception):
+    """Исключение, возникающие при некорректных данных, введенных пользователем"""
+
+
+class InvalidDate(Exception):
+    """Исключение, возникающие при обработке неккоректной даты"""
 
 
 class ValidationError(Exception):
