@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from working_with_models.models import Student, Grade
+from working_with_models.models import Student, Grade, BaseModel
 
 
 def separate_action() -> None:
@@ -77,11 +77,11 @@ def yes_or_no_msg() -> None:
     print('[2] - нет')
 
 
-def create_obj_with_this_data_msg(obj):
-    for attr_index in range(len(obj.attributes) - 1):
-        if obj.attributes[attr_index + 1] not in ('password', 'is_current'):
-            print(f'{obj.attributes_ru[attr_index].lower().capitalize()}: '
-                  f'{getattr(obj, obj.attributes[attr_index + 1])}')
+def print_obj_with_this_data_msg(obj: BaseModel) -> None:
+    for attr_en, attr_ru in zip(obj.attributes[1:], obj.attributes_ru):
+        if attr_en not in ('password', 'is_current'):
+            print(f'{attr_ru.lower().capitalize()}: '
+                  f'{getattr(obj, attr_en)}')
 
 
 def teacher_main_menu_choices_msg() -> None:

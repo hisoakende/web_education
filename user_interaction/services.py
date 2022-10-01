@@ -1,7 +1,7 @@
 import datetime
 from getpass import getpass
 from string import digits
-from typing import Type, Union, Literal, Callable, Optional
+from typing import Type, Union, Literal, Callable, Optional, Any
 
 import psycopg2.errors
 from prettytable import PrettyTable
@@ -19,6 +19,9 @@ from working_with_models.models import Teacher, Student, Class, Administrator, G
 profiles = {ProfileType.student: Student,
             ProfileType.teacher: Teacher,
             ProfileType.administrator: Administrator}
+
+models_for_admin_work = Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]
+model_classes_for_admin_work = Type[models_for_admin_work]
 
 UserTypes = Union[Teacher, Student, Administrator]
 
@@ -59,7 +62,7 @@ def try_to_create_obj(model_class: Type[BaseModel], *args: ModelValuesTypes) -> 
         return user
 
 
-def get_obj_from_user(objs: list, obj_name_str: str) -> BaseModel:
+def get_obj_from_user(objs: list, obj_name_str: str) -> Any:
     objs_enum = EnumConstructor('ObjsEnum', [(repr(c), str(i)) for i, c in enumerate(objs, 1)])
     print_objs_for_the_user_to_select(obj_name_str, objs)
     obj_number = get_choice(objs_enum).value
@@ -74,11 +77,11 @@ def get_additional_field(model_class: Type[User]) -> Union[None, str, Class]:
         return get_obj_from_user(classes, 'класс')
 
 
-def try_to_insert_obj_to_db(obj: BaseModel) -> bool:
+def try_to_insert_obj_to_db(obj: BaseModel, method: Literal['save', 'create']) -> bool:
     create_obj_choice = get_choice(SaveChanges)
     if create_obj_choice is SaveChanges.no:
         return False
-    obj.manager.create(execution=True)
+    getattr(getattr(obj, 'manager'), method)(execution=True)
     return True
 
 
@@ -438,15 +441,15 @@ def process_value_from_admin_to_change_obj(value: Union[str, BaseModel], attr: s
     return value
 
 
-def request_value_to_create_object_by_admin(model_class: Type[BaseModel], attr_en: str,
-                                            attr_ru: str) -> Union[BaseModel, str, None]:
+def request_value_to_create_obj_by_admin(model_class: Type[BaseModel], attr_en: str,
+                                         attr_ru: str) -> Union[BaseModel, str, None]:
     if attr_en in model_class.related_data:
         related_objs = model_class.related_data[attr_en].manager.all()
         related_model_str_ru = get_noun_form(attr_ru)
         return get_obj_from_user(related_objs, related_model_str_ru)
-    if attr_en == 'password':
+    elif attr_en == 'password':
         return get_answer(f'Введите поле \'{attr_ru}\':', getpass)
-    if attr_en == 'is_current':
+    elif attr_en == 'is_current':
         return
     return get_answer(f'Введите поле \'{attr_ru}\':')
 
@@ -463,10 +466,8 @@ def try_to_add_value_to_list_to_create_obj_by_admin(data: list[Union[BaseModel, 
 
 def get_values_to_create_obj_by_admin(model_class: Type[BaseModel]) -> list[Union[BaseModel, int, datetime.date, str]]:
     data = []
-    for attr_index in range(len(model_class.attributes) - 1):
-        attr_en = model_class.attributes[attr_index + 1]
-        attr_ru = model_class.attributes_ru[attr_index]
-        value = request_value_to_create_object_by_admin(model_class, attr_en, attr_ru)
+    for attr_en, attr_ru in zip(model_class.attributes[1:], model_class.attributes_ru):
+        value = request_value_to_create_obj_by_admin(model_class, attr_en, attr_ru)
         if value is None:
             continue
         try_to_add_value_to_list_to_create_obj_by_admin(data, value, attr_en, model_class)
@@ -475,7 +476,7 @@ def get_values_to_create_obj_by_admin(model_class: Type[BaseModel]) -> list[Unio
 
 def finish_registration(user: User) -> Optional[User]:
     try:
-        is_created_user = try_to_insert_obj_to_db(user)
+        is_created_user = try_to_insert_obj_to_db(user, 'create')
     except psycopg2.errors.UniqueViolation:
         print_error('Аккаунт такого типа с данным email уже существует')
         return
@@ -483,7 +484,7 @@ def finish_registration(user: User) -> Optional[User]:
         return user
 
 
-def finish_deleting_object(obj: Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]) -> None:
+def finish_deleting_object(obj: models_for_admin_work) -> None:
     delete_obj_choice = get_choice(SaveChanges, delete_obj_msg)
     if delete_obj_choice is SaveChanges.yes:
         obj.manager.delete(execution=True)
@@ -497,3 +498,21 @@ def warn_user_about_dependent_models(model_class: Union[Teacher, Class, Subject,
     for i, dependent_obj in enumerate(dependent_models[model_class], 1):
         print(f'{i}) \'{dependent_obj.name_ru}\'')
     print()
+
+
+def get_obj_from_user_for_admin_work(model_class: model_classes_for_admin_work,
+                                     msg: str) -> Union[models_for_admin_work, None]:
+    objs = model_class.manager.all()
+    if not objs:
+        print(msg)
+        return
+    return get_obj_from_user(objs, 'объект')
+
+
+def get_attrs_to_change(obj: BaseModel) -> dict[str, str]:
+    attrs_to_change = {}
+    for attr_en, attr_ru in zip(obj.attributes[1:], obj.attributes_ru):
+        if attr_en in ('pk', 'is_current'):
+            continue
+        attrs_to_change[f'{attr_ru} (текущее значение - \'{getattr(obj, attr_en)})\''] = attr_en
+    return attrs_to_change

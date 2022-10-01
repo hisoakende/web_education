@@ -24,7 +24,7 @@ class BaseValidator:
     def check_for_range(self, value: int, min_length: int, max_length: int) -> None:
         if value not in range(min_length, max_length + 1):
             raise ValidationError(f'Неккореткное значение поля \'{self.name_ru}\'. '
-                                  f'Допустимый диапозон - [{min_length};{max_length}]')
+                                  f'Допустимый диапозон - [{min_length}; {max_length}]')
 
     def __set__(self, instance: 'BaseModel', value: Any) -> None:
         instance.__dict__[self.name] = value

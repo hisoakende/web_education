@@ -1,5 +1,5 @@
 from other.utils import get_password_hash
-from user_interaction.messages import profile_type_msg, create_obj_with_this_data_msg, save_account_msg, save_obj_msg
+from user_interaction.messages import profile_type_msg, print_obj_with_this_data_msg, save_account_msg, save_obj_msg
 from user_interaction.services import *
 from user_interaction.services import create_dict_with_user_data, profiles, try_to_insert_obj_to_db
 from working_with_models.models import User, SubjectClassTeacher, Grade
@@ -38,7 +38,7 @@ def register_user() -> Union[None, User]:
         print_error('Повторите процедуру регистрации еще раз')
         return
     data.pop('password')
-    create_obj_with_this_data_msg(user)
+    print_obj_with_this_data_msg(user)
     save_account_msg()
     user = finish_registration(user)
     if user is None:
@@ -113,7 +113,7 @@ def print_grades_of_student(school_class: Class) -> None:
     show_grades(student)
 
 
-def create_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]) -> None:
+def create_obj_by_admin(model_class: model_classes_for_admin_work) -> None:
     """Позволяет администратору добавить объект в систему"""
 
     if model_class is Period:
@@ -130,20 +130,18 @@ def create_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Per
     if obj is None:
         print_error('Неуспешно!')
         return
-    create_obj_with_this_data_msg(obj)
+    print_obj_with_this_data_msg(obj)
     save_obj_msg()
-    if (isinstance(obj, (Teacher, Student)) and finish_registration(obj)) or (try_to_insert_obj_to_db(obj)):
+    if (isinstance(obj, (Teacher, Student)) and finish_registration(obj)) or (try_to_insert_obj_to_db(obj, 'create')):
         print('Успешно!')
 
 
-def remove_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]) -> None:
+def remove_obj_by_admin(model_class: model_classes_for_admin_work) -> None:
     """Позволяет администратору удалить объект из системы"""
 
-    objs = model_class.manager.all()
-    if not objs:
-        print('Нет объектов для удаления!')
+    obj = get_obj_from_user_for_admin_work(model_class, 'Нет объектов для удаления!')
+    if obj is None:
         return
-    obj = get_obj_from_user(objs, 'объект')
     if model_class is Period and obj.pk == Period.manager.get(is_current=True).pk:
         print_error('Невозможно удалить текущий период успеваемости!')
         return
@@ -152,5 +150,31 @@ def remove_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Per
     finish_deleting_object(obj)
 
 
-def change_obj_by_admin():
-    pass
+def change_obj_by_admin(model_class: model_classes_for_admin_work) -> None:
+    """Позволяет администратору изменить объект"""
+
+    obj = get_obj_from_user_for_admin_work(model_class, 'Нет объектов для изменения!')
+    if obj is None:
+        return
+    attrs_to_change = get_attrs_to_change(obj)
+    attr_en = attrs_to_change[get_obj_from_user(list(attrs_to_change.keys()), 'поле для измнения:')]
+    attr_ru = model_class.attributes_ru[model_class.attributes.index(attr_en) - 1]
+    if model_class is Period:
+        print('Дата ставится в формате: (день/месяц/год)')
+    try:
+        new_raw_value = request_value_to_create_obj_by_admin(model_class, attr_en, attr_ru)
+    except InvalidData:
+        print_error('Неккоректные данные!')
+        return
+    new_processed_value = process_value_from_admin_to_change_obj(new_raw_value, attr_en, model_class)
+    try:
+        setattr(obj, attr_en, new_processed_value)
+    except ValidationError as e:
+        print_error(str(e))
+        return
+    print_obj_with_this_data_msg(obj)
+    save_obj_msg()
+    if try_to_insert_obj_to_db(obj, 'save'):
+        print('Объект сохранен')
+    else:
+        print('Объект не сохранен')

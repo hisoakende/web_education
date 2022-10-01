@@ -70,11 +70,12 @@ def manage_school_performance() -> None:
 def change_object() -> None:
     """Пункт меню 'Изменить объект' администратора"""
 
-    model_classes = {Teacher.name_ru: Teacher, Student.name_ru: Student, Class.name_ru: Class,
-                     Subject.name_ru: Subject, Period.name_ru: Period,
-                     SubjectClassTeacher.name_ru: SubjectClassTeacher}
-    model_class_to_change = get_obj_from_user(list(model_classes.keys()), 'объект')
     what_to_do_with_obj_choice = get_choice(WhatToDoWithObj, what_to_do_with_obj_msg)
+    if what_to_do_with_obj_choice is WhatToDoWithObj.change:
+        model_classes = model_classes_to_change
+    else:
+        model_classes = model_classes_to_create_and_remove
+    model_class_to_change = get_obj_from_user(list(model_classes.keys()), 'тип объекта')
     change_object_actions[what_to_do_with_obj_choice](model_classes[model_class_to_change])
 
 
@@ -98,3 +99,7 @@ user_actions_and_choices = {
     'Administrator': (base_actions | administrator_actions, administrator_main_menu_choice,
                       administrator_main_menu_choices_msg)
 }
+
+model_classes_to_change = {Class.name_ru: Class, Subject.name_ru: Subject,
+                           Period.name_ru: Period, SubjectClassTeacher.name_ru: SubjectClassTeacher}
+model_classes_to_create_and_remove = model_classes_to_change | {Teacher.name_ru: Teacher, Student.name_ru: Student}
