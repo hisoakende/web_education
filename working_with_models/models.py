@@ -75,7 +75,7 @@ class Teacher(User, BaseModel):
     db_table = 'teachers'
     attributes = User.attributes + ('about_person',)
     attributes_ru = User.attributes_ru + ('об учителе',)
-    name_ru = 'Учитель'
+    name_ru = 'учитель'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, about_person: str) -> None:
@@ -91,9 +91,9 @@ class Class(BaseModel):
 
     db_table = 'classes'
     attributes = BaseModel.attributes + ('number', 'letter', 'classroom_teacher')
-    attributes_ru = ('номер', 'буква', 'классный руковдитель')
+    attributes_ru = ('номер', 'буква', 'классный руководитель')
     related_data = {'classroom_teacher': Teacher}
-    name_ru = 'Класс'
+    name_ru = 'класс'
 
     number = ClassNumberValidator()
     letter = ClassLetterValidator()
@@ -115,7 +115,7 @@ class Student(User, BaseModel):
     attributes = User.attributes + ('school_class',)
     attributes_ru = User.attributes_ru + ('класс',)
     related_data = {'school_class': Class}
-    name_ru = 'Ученик'
+    name_ru = 'ученик'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
                  email: str, password: str, school_class: Union[pk_obj, 'Class']) -> None:
@@ -134,7 +134,7 @@ class Administrator(User, BaseModel):
 
     db_table = 'administrators'
     attributes = User.attributes
-    name_ru = 'Администратор'
+    name_ru = 'администратор'
 
 
 class Subject(BaseModel):
@@ -146,7 +146,7 @@ class Subject(BaseModel):
     db_table = 'subjects'
     attributes = BaseModel.attributes + ('name',)
     attributes_ru = ('название',)
-    name_ru = 'Предмет'
+    name_ru = 'предмет'
 
     name = SubjectNameValidator()
 
@@ -168,7 +168,7 @@ class Grade(BaseModel):
     attributes = BaseModel.attributes + ('value', 'student', 'subject', 'date')
     attributes_ru = ('значение', 'ученик', 'предмет', 'дата')
     related_data = {'student': Student, 'subject': Subject}
-    name_ru = 'Оценка'
+    name_ru = 'оценка'
 
     value = GradeValueValidator()
 
@@ -187,13 +187,16 @@ class Period(BaseModel):
     db_table = 'periods'
     attributes = BaseModel.attributes + ('start', 'finish', 'is_current')
     attributes_ru = ('начальная дата', 'конечная дата', 'текущий ли период')
-    name_ru = 'Период успеваемости'
+    name_ru = 'период успеваемости'
 
     def __init__(self, start: datetime.date, finish: datetime.date, is_current: bool = False) -> None:
         super().__init__()
         self.start = start
         self.finish = finish
         self.is_current = is_current
+
+    def __str__(self) -> str:
+        return f'{self.start}/{self.finish}'
 
 
 class SubjectClassTeacher(BaseModel):
@@ -203,7 +206,7 @@ class SubjectClassTeacher(BaseModel):
     attributes = BaseModel.attributes + ('subject', 'school_class', 'teacher')
     attributes_ru = ('предмет', 'класс', 'учитель')
     related_data = {'subject': Subject, 'school_class': Class, 'teacher': Teacher}
-    name_ru = 'Связка предмет-класс-учитель'
+    name_ru = 'связка предмет-класс-учитель'
 
     def __init__(self, subject: Union[pk_obj, Subject],
                  school_class: Union[pk_obj, Class], teacher: Union[pk_obj, Teacher]) -> None:

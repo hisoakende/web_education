@@ -5,7 +5,6 @@ from user_interaction.services import create_dict_with_user_data, profiles, try_
 from working_with_models.models import User, SubjectClassTeacher, Grade
 
 
-@request_data('Неправильный email или пароль\nПовторите процедуру аутентификации еще раз\n')
 def authenticate_user() -> Optional[User]:
     """Аутентификация пользователя"""
 
@@ -13,14 +12,16 @@ def authenticate_user() -> Optional[User]:
     email = get_answer('Введите email:')
     password = get_answer('Введите пароль:', getpass)
     if len(password) == 64:
+        print_error('Неправильный email или пароль\nПовторите процедуру аутентификации еще раз')
         return
     model_class = profiles[type_profile]
     user = model_class.manager.get(email=email)
-    if user and user.password == get_password_hash(user.second_name + password + user.email):
-        return user
+    if not user or user.password != get_password_hash(user.second_name + password + user.email):
+        print_error('Неправильный email или пароль\nПовторите процедуру аутентификации еще раз')
+        return
+    return user
 
 
-@request_data('Повторите процедуру регистрации еще раз\n')
 def register_user() -> Union[None, User]:
     """Регистрация пользователя"""
 
@@ -29,17 +30,20 @@ def register_user() -> Union[None, User]:
     data = create_dict_with_user_data(model_class)
     if data['password'] != data['repeated_password']:
         print_error('Введенные пароли не совпадают')
+        print_error('Повторите процедуру регистрации еще раз')
         return
     data.pop('repeated_password')
     user = try_to_create_obj(model_class, *data.values())
     if user is None:
+        print_error('Повторите процедуру регистрации еще раз')
         return
     data.pop('password')
     create_obj_with_this_data_msg(user)
     save_account_msg()
     user = finish_registration(user)
     if user is None:
-        register_user()
+        print_error('Повторите процедуру регистрации еще раз')
+        return
     return user
 
 
@@ -111,6 +115,7 @@ def print_grades_of_student(school_class: Class) -> None:
 
 def create_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]) -> None:
     """Позволяет администратору добавить объект в систему"""
+
     if model_class is Period:
         print('Дата ставится в формате: (день/месяц/год)')
     try:
@@ -127,14 +132,24 @@ def create_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Per
         return
     create_obj_with_this_data_msg(obj)
     save_obj_msg()
-    if isinstance(obj, (Teacher, Student)):
-        finish_registration(obj)
-    elif try_to_insert_obj_to_db(obj):
+    if (isinstance(obj, (Teacher, Student)) and finish_registration(obj)) or (try_to_insert_obj_to_db(obj)):
         print('Успешно!')
 
 
-def remove_obj_by_admin():
-    pass
+def remove_obj_by_admin(model_class: Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]) -> None:
+    """Позволяет администратору удалить объект из системы"""
+
+    objs = model_class.manager.all()
+    if not objs:
+        print('Нет объектов для удаления!')
+        return
+    obj = get_obj_from_user(objs, 'объект')
+    if model_class is Period and obj.pk == Period.manager.get(is_current=True).pk:
+        print_error('Невозможно удалить текущий период успеваемости!')
+        return
+    if model_class in dependent_models:
+        warn_user_about_dependent_models(model_class)
+    finish_deleting_object(obj)
 
 
 def change_obj_by_admin():

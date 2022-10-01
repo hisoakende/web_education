@@ -239,19 +239,6 @@ class TestParseStudentGradingCommand(unittest.TestCase):
         State.clear_cache()
 
 
-class TestRelatedModelStrRuToChoice(unittest.TestCase):
-
-    def test_attr_is_teacher(self):
-        result = get_related_model_str_ru_to_choice('teacher')
-        expected_result = 'учителя'
-        self.assertEqual(expected_result, result)
-
-    def test_attr_is_classroom_teacher(self):
-        result = get_related_model_str_ru_to_choice('classroom_teacher')
-        expected_result = 'классного руководителя'
-        self.assertEqual(expected_result, result)
-
-
 class TestProcessValueFromAdminToChangeObj(unittest.TestCase):
 
     @classmethod

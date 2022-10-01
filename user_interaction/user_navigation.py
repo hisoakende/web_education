@@ -4,7 +4,8 @@ from user_interaction.enums import WhatToDoWithLogin, teacher_main_menu_choice, 
 from user_interaction.messages import welcome_msg, authenticate_user_msg, \
     choice_about_login_msg, registration_user_msg, hello_user_msg, teacher_main_menu_choices_msg, \
     student_main_menu_choices_msg, administrator_main_menu_choices_msg, main_menu_msg, separate_action, print_error, \
-    manage_class_performance_choices_msg, manage_school_performance_choices_msg, what_to_do_with_obj_msg
+    manage_class_performance_choices_msg, manage_school_performance_choices_msg, what_to_do_with_obj_msg, \
+    possible_actions_msg
 from user_interaction.requesting_data_from_user import get_choice
 from user_interaction.services import State, get_obj_from_user
 from user_interaction.user_actions import authenticate_user, register_user, logout, show_grades, get_my_teachers, \
@@ -17,13 +18,17 @@ def welcome() -> None:
     """Функция приветствия"""
 
     welcome_msg()
-    user_choice = get_choice(WhatToDoWithLogin, choice_about_login_msg)
-    if user_choice is WhatToDoWithLogin.authentication:
-        authenticate_user_msg()
-        user = authenticate_user()
-    else:
-        registration_user_msg()
-        user = register_user()
+    user = None
+    while user is None:
+        possible_actions_msg()
+        user_choice = get_choice(WhatToDoWithLogin, choice_about_login_msg)
+        if user_choice is WhatToDoWithLogin.authentication:
+            authenticate_user_msg()
+            user = authenticate_user()
+        else:
+            registration_user_msg()
+            user = register_user()
+        separate_action()
     hello_user_msg(user.first_name, user.patronymic, user.name_ru)
     State.user = user
 

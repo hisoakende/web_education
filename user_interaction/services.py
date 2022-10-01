@@ -11,7 +11,7 @@ from other.exceptions import InstanceCantExist, InvalidData, ValidationError, \
 from other.utils import ModelValuesTypes
 from user_interaction.enums import EnumConstructor, ProfileType, SaveChanges, WhatToDoWithGrades
 from user_interaction.messages import print_error, separate_action, print_grading_instruction, preliminary_grades_msg, \
-    print_objs_for_the_user_to_select, what_to_do_with_grades_msg
+    print_objs_for_the_user_to_select, what_to_do_with_grades_msg, delete_obj_msg, warning_before_deletion_msg
 from user_interaction.requesting_data_from_user import get_answer, get_choice, request_data
 from working_with_models.models import Teacher, Student, Class, Administrator, Grade, Period, SubjectClassTeacher, \
     Subject, User, BaseModel
@@ -24,6 +24,9 @@ UserTypes = Union[Teacher, Student, Administrator]
 
 months_ru = ('Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня',
              'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря')
+
+dependent_models = {Teacher: (Class, SubjectClassTeacher, Grade), Class: (SubjectClassTeacher, Student),
+                    Subject: (SubjectClassTeacher, Grade), Student: (Grade,)}
 
 
 class State:
@@ -413,11 +416,12 @@ def get_objs_from_sct(raw_objs: list[SubjectClassTeacher], model: str) -> list[U
     return [getattr(obj, model) for obj in raw_objs]
 
 
-def get_related_model_str_ru_to_choice(attr: str) -> Optional[str]:
-    if attr == 'teacher':
+def get_noun_form(attr: str) -> str:
+    if attr == 'учитель':
         return 'учителя'
-    elif attr == 'classroom_teacher':
+    elif attr == 'классный руководитель':
         return 'классного руководителя'
+    return attr
 
 
 def process_value_from_admin_to_change_obj(value: Union[str, BaseModel], attr: str,
@@ -438,7 +442,7 @@ def request_value_to_create_object_by_admin(model_class: Type[BaseModel], attr_e
                                             attr_ru: str) -> Union[BaseModel, str, None]:
     if attr_en in model_class.related_data:
         related_objs = model_class.related_data[attr_en].manager.all()
-        related_model_str_ru = get_related_model_str_ru_to_choice(attr_en) or attr_ru
+        related_model_str_ru = get_noun_form(attr_ru)
         return get_obj_from_user(related_objs, related_model_str_ru)
     if attr_en == 'password':
         return get_answer(f'Введите поле \'{attr_ru}\':', getpass)
@@ -477,3 +481,19 @@ def finish_registration(user: User) -> Optional[User]:
         return
     if is_created_user:
         return user
+
+
+def finish_deleting_object(obj: Union[Teacher, Student, Class, Subject, Period, SubjectClassTeacher]) -> None:
+    delete_obj_choice = get_choice(SaveChanges, delete_obj_msg)
+    if delete_obj_choice is SaveChanges.yes:
+        obj.manager.delete(execution=True)
+        print('Объект удален')
+    else:
+        print('Объект не удален')
+
+
+def warn_user_about_dependent_models(model_class: Union[Teacher, Class, Subject, Student]) -> None:
+    warning_before_deletion_msg()
+    for i, dependent_obj in enumerate(dependent_models[model_class], 1):
+        print(f'{i}) \'{dependent_obj.name_ru}\'')
+    print()

@@ -58,12 +58,17 @@ def print_full_name(first_name: str, second_name: str, patronymic: str) -> None:
 
 
 def save_account_msg() -> None:
-    print('\nСохранить аккаунт?')
+    print('\nСоздать аккаунт?')
     yes_or_no_msg()
 
 
 def save_obj_msg() -> None:
     print('\nСохранить объект?')
+    yes_or_no_msg()
+
+
+def delete_obj_msg() -> None:
+    print('Удалить объект?')
     yes_or_no_msg()
 
 
@@ -87,7 +92,7 @@ def teacher_main_menu_choices_msg() -> None:
 
 def manage_class_performance_choices_msg() -> None:
     separate_action()
-    print('Возможные действия:')
+    possible_actions_msg()
     print('[1] - показать успеваемость класса')
     print('[2] - показать успеваемость одного ученика')
 
@@ -109,12 +114,14 @@ def base_main_menu_choices_msg() -> None:
 
 
 def hello_user_msg(name: str, patronymic: str, user_type: str) -> None:
-    separate_action()
     strong_font(f'Вы вошли как {name} {patronymic} ({user_type})')
 
 
 def main_menu_msg() -> None:
     strong_font('Главное меню')
+
+
+def possible_actions_msg() -> None:
     print('Возможные действия:')
 
 
@@ -155,7 +162,7 @@ def what_to_do_with_grades_msg() -> None:
 
 def manage_school_performance_choices_msg() -> None:
     separate_action()
-    print('Возможные действия:')
+    possible_actions_msg()
     print('[1] - управлять успеваемостью')
     print('[2] - показать успеваемость одного ученика')
 
@@ -165,3 +172,7 @@ def what_to_do_with_obj_msg() -> None:
     print('[1] - добавить')
     print('[2] - удалить')
     print('[3] - изменить')
+
+
+def warning_before_deletion_msg() -> None:
+    strong_font('Внимание! При удалении объекта данного типа могут быть удалены связанные объекты следующих типов:')
