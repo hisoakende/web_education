@@ -73,14 +73,15 @@ class Teacher(User, BaseModel):
     """
 
     db_table = 'teachers'
-    attributes = User.attributes + ('about_person',)
-    attributes_ru = User.attributes_ru + ('об учителе',)
+    attributes = User.attributes + ('about_person', 'is_active')
+    attributes_ru = User.attributes_ru + ('об учителе', 'активный ли учитель')
     name_ru = 'учитель'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
-                 email: str, password: str, about_person: str) -> None:
+                 email: str, password: str, about_person: str, is_active: bool = False) -> None:
         super().__init__(first_name, second_name, patronymic, email, password)
         self.about_person = about_person
+        self.is_active = is_active
 
 
 class Class(BaseModel):
@@ -112,15 +113,16 @@ class Student(User, BaseModel):
     """Модель ученика. Ученик может просматривать учителей, которые ведут у него занятия, а также свои оценки"""
 
     db_table = 'students'
-    attributes = User.attributes + ('school_class',)
-    attributes_ru = User.attributes_ru + ('класс',)
+    attributes = User.attributes + ('school_class', 'is_active')
+    attributes_ru = User.attributes_ru + ('класс', 'активный ли ученик')
     related_data = {'school_class': Class}
     name_ru = 'ученик'
 
     def __init__(self, first_name: str, second_name: str, patronymic: str,
-                 email: str, password: str, school_class: Union[pk_obj, 'Class']) -> None:
+                 email: str, password: str, school_class: Union[pk_obj, 'Class'], is_active: bool = False) -> None:
         super().__init__(first_name, second_name, patronymic, email, password)
         self.school_class = school_class
+        self.is_active = is_active
 
     def __hash__(self) -> int:
         return hash(self.email)

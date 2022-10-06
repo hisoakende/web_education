@@ -6,7 +6,8 @@ CREATE TABLE teachers
     patronymic   VARCHAR(20)  NOT NULL,
     email        VARCHAR(256) NOT NULL UNIQUE,
     password     CHAR(64)     NOT NULL,
-    about_person VARCHAR      NOT NULL
+    about_person VARCHAR      NOT NULL,
+    is_active    BOOLEAN
 );
 
 CREATE TABLE classes
@@ -25,7 +26,8 @@ CREATE TABLE students
     patronymic      VARCHAR(20)                                   NOT NULl,
     email           VARCHAR(256)                                  NOT NULL UNIQUE,
     password        CHAR(64)                                      NOT NULL,
-    school_class_id INT REFERENCES classes (id) ON DELETE CASCADE NOT NULL
+    school_class_id INT REFERENCES classes (id) ON DELETE CASCADE NOT NULL,
+    is_active       BOOLEAN
 );
 
 CREATE TABLE subjects

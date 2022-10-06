@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from working_with_models.models import Student, Grade, BaseModel
+from working_with_models.models import Student, Grade, BaseModel, Period, User
 
 
 def separate_action() -> None:
@@ -79,7 +79,7 @@ def yes_or_no_msg() -> None:
 
 def print_obj_with_this_data_msg(obj: BaseModel) -> None:
     for attr_en, attr_ru in zip(obj.attributes[1:], obj.attributes_ru):
-        if attr_en not in ('password', 'is_current'):
+        if attr_en not in ('password', 'is_current', 'is_active'):
             print(f'{attr_ru.lower().capitalize()}: '
                   f'{getattr(obj, attr_en)}')
 
@@ -107,6 +107,8 @@ def administrator_main_menu_choices_msg() -> None:
     base_main_menu_choices_msg()
     print('[2] - управлять успеваемостью')
     print('[3] - управлять объектами')
+    print('[4] - установить период успеваемости')
+    print('[5] - активировать пользователей')
 
 
 def base_main_menu_choices_msg() -> None:
@@ -176,3 +178,13 @@ def what_to_do_with_obj_msg() -> None:
 
 def warning_before_deletion_msg() -> None:
     strong_font('Внимание! При удалении объекта данного типа могут быть удалены связанные объекты следующих типов:')
+
+
+def make_period_current_choice_msg(period: Period) -> None:
+    print(f'Сделать период \'{period}\' текущим?')
+    yes_or_no_msg()
+
+
+def activate_user_choice_msg(user: User) -> None:
+    print(f'Активировать пользователя {user}?')
+    yes_or_no_msg()

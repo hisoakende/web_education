@@ -1,5 +1,7 @@
+import config
 from other.utils import get_password_hash
-from user_interaction.messages import profile_type_msg, print_obj_with_this_data_msg, save_account_msg, save_obj_msg
+from user_interaction.messages import profile_type_msg, print_obj_with_this_data_msg, save_account_msg, save_obj_msg, \
+    make_period_current_choice_msg, activate_user_choice_msg
 from user_interaction.services import *
 from user_interaction.services import create_dict_with_user_data, profiles, try_to_insert_obj_to_db
 from working_with_models.models import User, SubjectClassTeacher, Grade
@@ -22,15 +24,19 @@ def authenticate_user() -> Optional[User]:
     return user
 
 
-def register_user() -> Union[None, User]:
+def register_user() -> Optional[User]:
     """Регистрация пользователя"""
 
     type_profile = get_choice(ProfileType, profile_type_msg)
     model_class = profiles[type_profile]
+    if model_class is Administrator:
+        key_to_create_administrator = get_answer('Введите секретный код:')
+        if key_to_create_administrator != config.KEY_TO_CREATE_ADMINISTRATOR:
+            print_error('Неверный секретный код')
+            return
     data = create_dict_with_user_data(model_class)
     if data['password'] != data['repeated_password']:
-        print_error('Введенные пароли не совпадают')
-        print_error('Повторите процедуру регистрации еще раз')
+        print_error('Введенные пароли не совпадают\nПовторите процедуру регистрации еще раз')
         return
     data.pop('repeated_password')
     user = try_to_create_obj(model_class, *data.values())
@@ -107,7 +113,7 @@ def print_school_class_grades(school_class: Class) -> None:
 def print_grades_of_student(school_class: Class) -> None:
     """Печатает успеваемость одного ученика без возможности редактировать оценки"""
 
-    students = sorted(Student.manager.filter(school_class=school_class), key=lambda x: x.second_name)
+    students = sorted(Student.manager.filter(school_class=school_class, is_active=True), key=lambda x: x.second_name)
     student = get_obj_from_user(students, 'ученика')
     print(f'Успеваемость {student}:')
     show_grades(student)
@@ -120,8 +126,8 @@ def create_obj_by_admin(model_class: model_classes_for_admin_work) -> None:
         print('Дата ставится в формате: (день/месяц/год)')
     try:
         values = get_values_to_create_obj_by_admin(model_class)
-    except InvalidData:
-        print_error('Неккоректные данные!')
+    except (InvalidData, NoObjsToChooseFrom) as e:
+        print_error(str(e))
         return
     if model_class is Period and values[1] <= values[0]:
         print_error('Конечная дата не может раньше или совпадать с текущей.\n')
@@ -132,7 +138,11 @@ def create_obj_by_admin(model_class: model_classes_for_admin_work) -> None:
         return
     print_obj_with_this_data_msg(obj)
     save_obj_msg()
-    if (isinstance(obj, (Teacher, Student)) and finish_registration(obj)) or (try_to_insert_obj_to_db(obj, 'create')):
+    if isinstance(obj, (Teacher, Student)):
+        obj.is_active = True
+        if finish_registration(obj):
+            print('Успешно!')
+    elif try_to_insert_obj_to_db(obj, 'create'):
         print('Успешно!')
 
 
@@ -178,3 +188,39 @@ def change_obj_by_admin(model_class: model_classes_for_admin_work) -> None:
         print('Объект сохранен')
     else:
         print('Объект не сохранен')
+
+
+def set_current_dates_by_admin() -> None:
+    """Позволяет администратору изменить текущий период успеваемости"""
+
+    periods = Period.manager.filter(is_current=False)
+    if not periods:
+        print_error('Существует только один период успеваемости, и сейчас он текущий')
+        return
+    new_current_period = get_obj_from_user(periods, 'период')
+    make_period_current_choice_msg(new_current_period)
+    if get_choice(SaveChanges) is SaveChanges.no:
+        return
+    old_current_period = Period.manager.get(is_current=True)
+    old_current_period.is_current = False
+    new_current_period.is_current = True
+    old_current_period.manager.save()
+    new_current_period.manager.save()
+    State.db.execute_transaction()
+    set_current_dates_to_state(new_current_period)
+
+
+def activate_users() -> None:
+    """Позволяет администратору активировать пользователей"""
+
+    model_classes = {'учитель': Teacher, 'ученик': Student}
+    model_class = get_obj_from_user(list(model_classes.keys()), 'тип пользователя')
+    users = model_classes[model_class].manager.filter(is_active=False)
+    if not users:
+        print('Все пользователи активированы!')
+        return
+    user = get_obj_from_user(users, 'пользователя')
+    user.is_active = True
+    activate_user_choice_msg(user)
+    if try_to_insert_obj_to_db(user, 'save'):
+        print('Пользователь успешно активирован')

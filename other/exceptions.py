@@ -31,6 +31,10 @@ class ValidationError(Exception):
     """Исключение, возникающие при валидации данных"""
 
 
+class NoObjsToChooseFrom(Exception):
+    """Исключение, возникающие при отсутствии объектов при попытке их выбрать"""
+
+
 class NoSubjectsTaughtByTheTeacher(Exception):
     """
     Исключение, возникающие при невозможности выставить/удалить

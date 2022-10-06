@@ -1,7 +1,7 @@
 from user_interaction.enums import WhatToDoWithLogin, teacher_main_menu_choice, \
     student_main_menu_choice, administrator_main_menu_choice, ManageClassPerformanceChoices, \
     ManageSchoolPerformanceChoices, WhatToDoWithObj
-from user_interaction.messages import welcome_msg, authenticate_user_msg, \
+from user_interaction.messages import authenticate_user_msg, \
     choice_about_login_msg, registration_user_msg, hello_user_msg, teacher_main_menu_choices_msg, \
     student_main_menu_choices_msg, administrator_main_menu_choices_msg, main_menu_msg, separate_action, print_error, \
     manage_class_performance_choices_msg, manage_school_performance_choices_msg, what_to_do_with_obj_msg, \
@@ -10,14 +10,14 @@ from user_interaction.requesting_data_from_user import get_choice
 from user_interaction.services import State, get_obj_from_user
 from user_interaction.user_actions import authenticate_user, register_user, logout, show_grades, get_my_teachers, \
     rate_students_by_teacher, print_school_class_grades, print_grades_of_student, \
-    rate_students_by_administrator, remove_obj_by_admin, change_obj_by_admin, create_obj_by_admin
+    rate_students_by_administrator, remove_obj_by_admin, change_obj_by_admin, create_obj_by_admin, \
+    set_current_dates_by_admin, activate_users
 from working_with_models.models import Class, Teacher, Subject, Student, Period, SubjectClassTeacher
 
 
 def welcome() -> None:
     """Функция приветствия"""
 
-    welcome_msg()
     user = None
     while user is None:
         possible_actions_msg()
@@ -29,13 +29,13 @@ def welcome() -> None:
             registration_user_msg()
             user = register_user()
         separate_action()
-    hello_user_msg(user.first_name, user.patronymic, user.name_ru)
     State.user = user
 
 
 def main_menu() -> None:
     """Функция для работы с главным меню"""
 
+    hello_user_msg(State.user.first_name, State.user.patronymic, State.user.name_ru)
     separate_action()
     main_menu_msg()
     action_set, choices, main_menu_choices_msg = user_actions_and_choices[State.user.__class__.__name__]
@@ -83,7 +83,8 @@ base_actions = {'exit': logout}
 student_actions = {'show_grades': show_grades, 'get_my_teachers': get_my_teachers}
 teacher_actions = {'rate_students_by_teacher': rate_students_by_teacher,
                    'manage_class_performance': manage_class_performance}
-administrator_actions = {'manage_school_performance': manage_school_performance, 'change_object': change_object}
+administrator_actions = {'manage_school_performance': manage_school_performance, 'change_object': change_object,
+                         'set_current_dates_by_admin': set_current_dates_by_admin, 'activate_users': activate_users}
 
 manage_class_performance_actions = {ManageClassPerformanceChoices.print_school_class_grades: print_school_class_grades,
                                     ManageClassPerformanceChoices.print_grades_of_student: print_grades_of_student}

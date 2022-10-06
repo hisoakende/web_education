@@ -7,7 +7,7 @@ import psycopg2.errors
 from prettytable import PrettyTable
 
 from other.exceptions import InstanceCantExist, InvalidData, ValidationError, \
-    NoSubjectsTaughtByTheTeacher, SemanticCommandError, ExitGradingCommand, InvalidDate
+    NoSubjectsTaughtByTheTeacher, SemanticCommandError, ExitGradingCommand, InvalidDate, NoObjsToChooseFrom
 from other.utils import ModelValuesTypes
 from user_interaction.enums import EnumConstructor, ProfileType, SaveChanges, WhatToDoWithGrades
 from user_interaction.messages import print_error, separate_action, print_grading_instruction, preliminary_grades_msg, \
@@ -63,6 +63,8 @@ def try_to_create_obj(model_class: Type[BaseModel], *args: ModelValuesTypes) -> 
 
 
 def get_obj_from_user(objs: list, obj_name_str: str) -> Any:
+    if not objs:
+        raise NoObjsToChooseFrom('Нет объектов для выбора')
     objs_enum = EnumConstructor('ObjsEnum', [(repr(c), str(i)) for i, c in enumerate(objs, 1)])
     print_objs_for_the_user_to_select(obj_name_str, objs)
     obj_number = get_choice(objs_enum).value
@@ -78,8 +80,7 @@ def get_additional_field(model_class: Type[User]) -> Union[None, str, Class]:
 
 
 def try_to_insert_obj_to_db(obj: BaseModel, method: Literal['save', 'create']) -> bool:
-    create_obj_choice = get_choice(SaveChanges)
-    if create_obj_choice is SaveChanges.no:
+    if get_choice(SaveChanges) is SaveChanges.no:
         return False
     getattr(getattr(obj, 'manager'), method)(execution=True)
     return True
@@ -97,8 +98,7 @@ def create_dict_with_user_data(model_class: Type[UserTypes]) -> dict[str, str]:
     return result
 
 
-def set_current_dates() -> None:
-    current_period = Period.manager.get(is_current=True)
+def set_current_dates_to_state(current_period: Period) -> None:
     State.current_dates = [current_period.start + datetime.timedelta(dt_dlt) for dt_dlt in
                            range((current_period.finish - current_period.start).days + 1)]
 
@@ -199,7 +199,7 @@ def get_table_with_students_grades_for_print(students: list[Student], subject: S
 def print_class_grades_table(school_class: Class, subject: Subject) -> None:
     """Печатает все оценки, полученные учениками определеннего класса по определенному предмету"""
 
-    students = sorted(Student.manager.filter(school_class=school_class), key=lambda st: st.second_name)
+    students = sorted(Student.manager.filter(school_class=school_class, is_active=True), key=lambda st: st.second_name)
     for index in range(0, len(students), 7):
         students_part = students[index: index + 7]
         table = get_table_with_students_grades_for_print(students_part, subject)
@@ -444,7 +444,10 @@ def process_value_from_admin_to_change_obj(value: Union[str, BaseModel], attr: s
 def request_value_to_create_obj_by_admin(model_class: Type[BaseModel], attr_en: str,
                                          attr_ru: str) -> Union[BaseModel, str, None]:
     if attr_en in model_class.related_data:
-        related_objs = model_class.related_data[attr_en].manager.all()
+        related_model = model_class.related_data[attr_en]
+        related_objs = get_all_objects_for_any_model(related_model)
+        if not related_objs:
+            raise NoObjsToChooseFrom('Нет зависимых объектов для выбора')
         related_model_str_ru = get_noun_form(attr_ru)
         return get_obj_from_user(related_objs, related_model_str_ru)
     elif attr_en == 'password':
@@ -502,7 +505,7 @@ def warn_user_about_dependent_models(model_class: Union[Teacher, Class, Subject,
 
 def get_obj_from_user_for_admin_work(model_class: model_classes_for_admin_work,
                                      msg: str) -> Union[models_for_admin_work, None]:
-    objs = model_class.manager.all()
+    objs = get_all_objects_for_any_model(model_class)
     if not objs:
         print(msg)
         return
@@ -516,3 +519,9 @@ def get_attrs_to_change(obj: BaseModel) -> dict[str, str]:
             continue
         attrs_to_change[f'{attr_ru} (текущее значение - \'{getattr(obj, attr_en)})\''] = attr_en
     return attrs_to_change
+
+
+def get_all_objects_for_any_model(model_class: Type[BaseModel]) -> list[BaseModel]:
+    if model_class in (Student, Teacher):
+        return model_class.manager.filter(is_active=True)
+    return model_class.manager.all()

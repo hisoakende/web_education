@@ -66,5 +66,6 @@ student_main_menu_choice = EnumConstructor(
 
 administrator_main_menu_choice = EnumConstructor(
     'AdministratorMainMenuChoice',
-    base_main_menu_choice + [('manage_school_performance', '2'), ('change_object', '3')]
+    base_main_menu_choice + [('manage_school_performance', '2'), ('change_object', '3'),
+                             ('set_current_dates_by_admin', '4'), ('activate_users', '5')]
 )
